@@ -42,4 +42,5 @@ function checkAuthz($action) {
 	return isLoggedIn();
 }
 
+
 ?>
