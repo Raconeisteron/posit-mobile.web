@@ -15,4 +15,7 @@ function genAuthKey($length = 16) {
 	return $k;
 }
 
+
+
+
 ?>

@@ -2,6 +2,7 @@
 
 require_once("controller/main.php");
 require_once("controller/api.php");
+require_once("utils/validate.php");
 
 $path = explode("/", $_SERVER["REQUEST_URI"]);
 for($n=0; $n<count($path); $n++)
