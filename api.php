@@ -2,9 +2,10 @@
 
 require_once("controller/main.php");
 require_once("controller/api.php");
-require_once("utils/validate.php");
-
+require_once("util/validate.php");
+require_once("util/messages.php");
 $path = explode("/", $_SERVER["REQUEST_URI"]);
+
 for($n=0; $n<count($path); $n++)
 	if($path[$n] == 'api')
 		break;
