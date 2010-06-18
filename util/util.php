@@ -16,6 +16,8 @@ function genAuthKey($length = 16) {
 }
 
 
-
+function sendEmail($to, $subject, $message){
+	mail($to, $subject, $message, "Content-Type: text/html; charset=iso-8859-1");
+}
 
 ?>

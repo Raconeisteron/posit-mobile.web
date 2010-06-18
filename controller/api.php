@@ -8,11 +8,11 @@
  */
 function apiController($path, $request, $files = null) {
 
-	global $dao;
+	global $dao,$smarty;
 	list($reqPath, $queryString) = explode('?', $path);
 	$pathParts = explode('/', substr($reqPath,1));
 	list($action) = $pathParts;
-
+	
 	if ($action != "addExpeditionPoint" && $action != "getDeviceByAuthKey") {
 		$log = Log::getInstance();
 		$log->log("$action");
@@ -21,7 +21,7 @@ function apiController($path, $request, $files = null) {
 
 	$authKey = $request["authKey"];
 
-	if($action!="login" && $action != "registerDevice" && $action != "getPendingDeviceStatus" && !$authKey) {
+	if($action!="login" && $action!="registerUser" && $action != "registerDevice" && $action != "getPendingDeviceStatus" && !$authKey) {
 		$response = array(
 			"errorCode" => ERR_AUTHKEY_MISSING,
 			"errorMessage" => "You must provide an authentication key with each request."
@@ -29,18 +29,21 @@ function apiController($path, $request, $files = null) {
 			echo json_encode($response);
 			die();
 	}
-	$device = $dao->getDeviceByAuthKey($authKey);
+	if ($action != "login" && $action != "registerUser"){
+		$device = $dao->getDeviceByAuthKey($authKey);
 
-	if($action != "registerDevice" && $action != "getPendingDeviceStatus" && !$device) {
-		$response = errorResponseCode(ERR_AUTHKEY_INVALID, "Invalid authentication key.");
-		echo json_encode($response);
-		die();
+		if($action != "registerDevice" && $action != "getPendingDeviceStatus" && !$device) {
+			$response = errorResponseCode(ERR_AUTHKEY_INVALID, "Invalid authentication key.");
+			echo json_encode($response);
+			die();
+		}
+		$deviceUserId = $device["user_id"];
+		$deviceIdentifier = $device["imei"];
 	}
 
-	$deviceUserId = $device["user_id"];
-	$deviceIdentifier = $device["imei"];
-	$response = array();
-	$err = false;
+
+
+
 	switch($action) {
 		case 'login':
 			extract($request);
@@ -55,9 +58,21 @@ function apiController($path, $request, $files = null) {
 				jsonError(ERR_PASSWORD_MISSING, "Password is required");
 			}
 			if (!$imei){
-				
+				jsonError(ERR_IMEI_MISSING, "IMEI Code is required");
 			}
-			
+		
+			if ($login = $dao->checkLogin($email, $password)){
+				$authKey = genAuthKey();
+				$userId = $login["id"];
+				
+				if ($dao->registerDevicePending($userId, $authKey)){
+					jsonMessage(AUTHN_OK, $authKey);
+				}else {
+					jsonError(ERR_SERVER, "Authentication Key cannot be generated");
+				}
+				 	
+			}
+			break;
 		case 'registerUser':
 			extract($request);
 			if(!$email){
@@ -67,25 +82,28 @@ function apiController($path, $request, $files = null) {
 					jsonError(ERR_EMAIL_INVALID, "Email Address is invalid");
 				}
 			}
-			if(!$firstName){
+			if(!$firstname){
 				jsonError(ERR_FIRSTNAME_MISSING, "Firstname is required");
 			}
-			if(!$lastName){
+			if(!$lastname){
 				jsonError(ERR_LASTNAME_MISSING, "LastName is required");
 			}
-			if(strlen($pass1) < 6){
+			if(strlen($password1) < 6){
 				jsonError(ERR_PASSWORD1_INVALID, "Password must be 6 characters or longer");
 			}
-			if($pass1 != $pass2){
+			if($password1 != $password2){
 				jsonError(ERR_PASSWORD_UNMATCHED, "Passwords must match");
-			}		
+			}
 			$newUser = array($email, $firstName, $lastName, $pass1);
-			
-			$result = $dao->registerUser($newUser);	
+				
+			$result = $dao->registerUser($newUser);
 			if($result === REGISTRATION_EMAILEXISTS){
 				jsonError(ERR_EMAIL_INVALID, "Email already exists");
-			}		
-				
+			}
+			$smarty->assign('link', SERVER_BASE_URI."/verifyEmail?email=$email");
+			sendEmail($email, "email verification", $smarty->fetch("emails/new_user.tpl"));
+			jsonMessage(AUTHN_OK, "Registration Successful");
+
 			break;
 		case 'getDeltaFindsIds':
 			//			echo $dao->getDeltaFindsIds($deviceIdentifier);
@@ -113,8 +131,8 @@ function apiController($path, $request, $files = null) {
 			echo $dao->addExpeditionPoint($request["expeditionId"],$request["lat"],
 			$request["lng"], $request["alt"], $request["swath"]);
 			break;
-				
-				
+
+
 		case 'getPendingDeviceStatus':
 			$device = $dao->getDeviceByAuthKey($authKey);
 			if($device["status"] == "ok")
@@ -153,16 +171,16 @@ function apiController($path, $request, $files = null) {
 		case 'updateFind':
 			echo $dao->updateFind($request["imei"],$request["guid"],$request["project_id"],$request["name"], $request["description"], $request["revision"]);
 			break;
-				
+
 		case 'attachPicture':
 			$imagedata=base64_decode($request["data_full"]);
 			$imagethumbdata=base64_decode($request["data_thumbnail"]);
-				
+
 			$result=$dao->addPictureToFind($request["imei"], $request["guid"], $request["identifier"], $request["project_id"],
 			$request["mime_type"], $request["timestamp"], $imagedata, $imagethumbdata);
 			echo json_encode($result);
 			break;
-				
+
 		case 'attachVideo':
 			$video_data = $files['file']['tmp_name'];
 			$video_type = $request["mimeType"];

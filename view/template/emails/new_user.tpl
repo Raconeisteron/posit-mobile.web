@@ -1,4 +1,4 @@
-{include file="header.tpl"}
+<html>
 <h2>Welcome to POSIT</h2>
 <p>Someone registered an account on posit server at 
 <a href="{$smarty.const.SERVER_BASE_URI}">{$smarty.const.SERVER_BASE_URI}</a>.</p>
@@ -6,4 +6,4 @@
 <a href="{$link}">{$link}</a>
 <p>Cheers,</p>
 <p>POSIT</p>
-{include file="footer.tpl"}
+</html>
