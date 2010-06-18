@@ -169,7 +169,7 @@ class DAO {
 			 from project ". $whereClause
 		);
 //		$stmt->execute();
-		$stmt->execute() or die("[Error MySQl dao.php line 154]" . mysql_error());
+		$stmt->execute() or die("[Error MySQl on ".__FILE__."at ".__LINE__."]" . mysql_error());
 		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		Log::getInstance()->log("getProjects: $result");
 
