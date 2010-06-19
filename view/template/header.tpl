@@ -48,9 +48,14 @@
 			      <div id="navigation" class="menu withprimary "> 
                   <div id="primary" class="clear-block"> 
                   <ul class="links"><li class="menu-120 active-trail first active"><a href="main" title="Home" class="active">Home</a></li> 
-            <li class="menu-114">			<div id="loginStatus">
+				<li class="menu-114">			
+				<div id="loginStatus">
 				{if $loggedIn}
-					Logged in as <strong>{$loginEmail}</strong> [<a href="logout" id="logout-link">log out</a>]
+
+				<div id="login-user">
+					Logged in as <strong>{$loginEmail}</strong> 
+				</div>
+				<a href="logout" id="logout-link">log out</a>
 				{else}
 					<a href="login">Log in/register</a>
 				{/if}

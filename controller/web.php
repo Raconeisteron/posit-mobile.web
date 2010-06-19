@@ -43,7 +43,7 @@ function webController($path, $request) {
 				$smarty->assign("projects", $projects);
 				$smarty->display('maps.tpl');
 				break;
-			case 'login':
+		case 'login':
 				$smarty->display('header.tpl');
 				$smarty->display('login.tpl');
 				$smarty->display('footer.tpl');
