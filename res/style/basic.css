@@ -143,3 +143,17 @@ legend { font-weight: bold }
 .list-item .find_id {
 	font-size:small;
 }
+
+.list-item .project-name {
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.list-item .project-role {
+	font-size: small;
+	font-style: italic;
+}
+
+.list-item .project-description {
+	font-size:small;
+}

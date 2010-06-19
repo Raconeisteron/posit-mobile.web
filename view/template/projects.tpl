@@ -1,12 +1,14 @@
 {include file="header.tpl" title="Projects Page" tab="projects"}
-<h2>All Projects</h2>
-<p><a href="project.new">New project</a></p>
+<h2>Your Projects</h2>
+<p><a href="project.new">New project</a> <a href="project.share">Share project</a></p>
+
 <div class="project_list">
 	{if $projects}
 	{foreach from=$projects item=project}
 	<div class="list-item">
-		<a href="project.display?id={$project.id}">{$project.name}</a> 
-		<p class="description">{$project.description}</p>
+		<a href="project.display?id={$project.id}" class="project-name">{$project.name}</a>
+		<span class="project-role">{$project.role}</span>
+		<p class="project-description">{$project.description}</p>
 	</div>
 	{/foreach}
 	{else}

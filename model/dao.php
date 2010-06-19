@@ -126,12 +126,30 @@ class DAO {
 		
 		return $stmt->fetch(PDO::FETCH_ASSOC);
 	}
+	
+	/**
+	 * get userID from the email
+	 * @param unknown_type $email
+	 */
+	function getUserId($email) {
+
+		$stmt = $this->db->prepare(
+			"SELECT id FROM user WHERE email = :email"
+		);
+		
+		$stmt->bindValue(":email", $email);
+		$stmt->execute();
+		
+		$result = $stmt->fetch(PDO::FETCH_ASSOC);
+		
+		return $result["id"];
+	}
 	/**
 	 * creates a new project
 	 * @param unknown_type $name
 	 * @param unknown_type $description
 	 */
-	function newProject($name, $description) {
+	function newProject($name, $description, $userId) {
 		Log::getInstance()->log("newProject: $name, $description");
 
 		$name = addslashes($name);
@@ -144,11 +162,42 @@ class DAO {
 		$stmt->bindValue(":name", $name);
 		$stmt->bindValue(":description", $description);
 		
-		
 		$stmt->execute();
 		
+		$result = $stmt->fetch(PDO::FETCH_ASSOC);
+		
+		$lastId = $this->db->lastInsertId();
+		
+		$stmt = $this->db->prepare(
+			"INSERT INTO user_project (user_id, project_id, role)
+				VALUES (:userId, :projectId, 'owner')"
+		); 
+		
+		$stmt->bindValue(":userId", $userId);
+		$stmt->bindValue(":projectId", $lastId);
+		
+		$stmt->execute() or print_r($stmt->errorInfo()) && die();
+		//die("[Error " .__FILE__." at ".__LINE__."] ". $this->db->errorInfo());
 		/*$stmt = $this->db->prepare("INSERT INTO project (name) VALUES ('$name')");*/
 		
+	}
+	
+	/**
+	 * Create a new project from the phone using the auth key
+	 * @param unknown_type $userId
+	 */
+	function newProjectFromPhone($name, $description, $authKey) {
+		
+		$stmt = $this->db->prepare(
+			"SELECT user_id FROM device WHERE auth_key = :authKey"
+		); 
+		
+		$stmt->bindValue(":authKey", $authKey);
+			
+		$stmt->execute();
+		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		if(is_array($result))
+			$this->newProject($name, $description, $result["user_id"]);
 	}
 	/**
 	 * gets an associative array of all the projects that are accessible to the entity
@@ -176,15 +225,19 @@ class DAO {
 		return $result;
 	}
 	/**
-	 * get the projects accessible to the user
+	 * Get the projects accessible to the user, whether or not
+	 * they are the owner
 	 * @param unknown_type $userId
 	 */
 	function getUserProjects($userId) {
 	    Log::getInstance()->log("getUserProjects: $userId");
 
 		$stmt = $this->db->prepare(
-			"select project_id from user_project 
-			 where user_id = :userId"
+			"SELECT project.name, project.id, project.description, user_project.role
+			 FROM project 
+			 JOIN user_project
+			 ON project.id = user_project.project_id 
+			 AND user_project.user_id = :userId"
 		);
 		
 		$stmt->bindValue(":userId", $userId);
@@ -192,6 +245,51 @@ class DAO {
 		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		
 		return $result;
+	}
+	
+	/**
+	 * Get projects where the user specified is the owner.
+	 * @param unknown_type $ownerId
+	 */
+	function getOwnerProjects($ownerId) {
+		$stmt = $this->db->prepare(
+			"SELECT project.name, project.id, project.description
+			 FROM project 
+			 JOIN user_project
+			 ON project.id = user_project.project_id 
+			 AND user_project.user_id = :ownerId AND user_project.role = 'owner'"
+		);
+		
+		$stmt->bindValue(":ownerId", $ownerId);
+		$stmt->execute();
+		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		
+		return $result;	
+	}
+	/**
+	 * Gives a user access to a project
+	 * @param unknown_type $userId
+	 */
+	function shareProject($ownerId, $userId, $projectId) {
+		$stmt = $this->db->prepare(
+			"select user_id from user_project 
+			 WHERE role = 'owner' AND project_id = :projectId 
+			 AND user_id = :userId"
+		);
+		$stmt->bindValue(":projectId", $projectId);
+		$stmt->bindValue(":userId", $userId);
+		$stmt->execute();
+		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		
+		if (is_array($result)) {
+			$stmt = $this->db->prepare(
+			"INSERT INTO user_project (user_id, project_id, role)
+				VALUES (:userId, :projectId, 'user')"
+			);
+			$stmt->bindValue(":projectId", $projectId);
+			$stmt->bindValue(":userId", $userId);
+			$stmt->execute();
+		}
 	}
 	/**
 	 * get all the finds for a project
