@@ -138,11 +138,14 @@ class DAO {
 		);
 		
 		$stmt->bindValue(":email", $email);
-		$stmt->execute();
+		if ($stmt->execute()){;
 		
-		$result = $stmt->fetch(PDO::FETCH_ASSOC);
-		
-		return $result["id"];
+			$result = $stmt->fetch(PDO::FETCH_ASSOC);
+			return $result["id"];
+		}else {
+			return false;
+		}
+
 	}
 	/**
 	 * creates a new project

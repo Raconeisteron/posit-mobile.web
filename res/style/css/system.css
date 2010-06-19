@@ -545,6 +545,7 @@ span.password-confirm span {
 
 #loginStatus {
 	float:right;
+	display:inline-block;
 }
 
 #login-user {
@@ -575,5 +576,19 @@ span.password-confirm span {
 
 .list-item .project-description {
 	font-size: small;
+}
+
+
+#flash {
+	background-color: #91C3E8;
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	
+	text-align: center;
+	
+	display: none;
 }
 

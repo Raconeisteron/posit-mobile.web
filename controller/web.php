@@ -1,7 +1,7 @@
 <?php
 
 function webController($path, $request) {
-	global $smarty, $dao;
+	global $smarty, $dao, $error;
 	list($reqPath, $queryString) = explode('?', $path);
 	$pathParts = explode('/', substr($reqPath,1));
 	list($action) = $pathParts;
@@ -116,13 +116,30 @@ function webController($path, $request) {
 			case 'project.share':
 				$loginId = $_SESSION["loginId"];
 				$projects = $dao->getOwnerProjects($loginId);
+				$smarty->assign("error", $_SESSION["error"]);
+				$_SESSION["error"] = "";
 				$smarty->assign("projects", $projects);
 				$smarty->display("share_project.tpl");
 				break;
 			case 'project.share.do':
 				$loginId = $_SESSION["loginId"];
-				$userId = $dao->getUserId($request["email"]);
+				if (!$request["email"]){
+					$_SESSION["error"] = "email required";
+					header("Location: project.share");
+					break;
+				}else {
+					if ($request["email"] == ""){
+						$_SESSION["error"] = "email required";
+						header("Location: project.share");
+						break;
+					}
+				}
+				if ($userId = $dao->getUserId($request["email"])){
+					$error = "Username doesn't exist";
+					header("Location: project.share");
+				}
 				$projectId = $request["projectId"];
+
 				//print_r("projectid: ".$projectId."userId:".$userId);
 				$projects = $dao->shareProject($loginId, $userId, $projectId);
 				header("Location: projects");
