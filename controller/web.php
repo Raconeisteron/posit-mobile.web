@@ -86,8 +86,8 @@ function webController($path, $request) {
 				header("Location: main");
 				break;
 			case 'projects':
-//			        print_r($_SESSION);
-				$projects = $dao->getProjects();
+				$loginId = $_SESSION["loginId"];
+				$projects = $dao->getUserProjects($loginId);
 				$smarty->assign("projects", $projects);
 				$smarty->display("projects.tpl");
 				break;
@@ -109,7 +109,22 @@ function webController($path, $request) {
 			case 'project.new.do':
 				$name = $request["name"];
 				$description = $request["description"];
-				$dao->newProject($name, $description);
+				$loginId = $_SESSION["loginId"];
+				$dao->newProject($name, $description, $loginId);
+				header("Location: projects");
+				break;
+			case 'project.share':
+				$loginId = $_SESSION["loginId"];
+				$projects = $dao->getOwnerProjects($loginId);
+				$smarty->assign("projects", $projects);
+				$smarty->display("share_project.tpl");
+				break;
+			case 'project.share.do':
+				$loginId = $_SESSION["loginId"];
+				$userId = $dao->getUserId($request["email"]);
+				$projectId = $request["projectId"];
+				//print_r("projectid: ".$projectId."userId:".$userId);
+				$projects = $dao->shareProject($loginId, $userId, $projectId);
 				header("Location: projects");
 				break;
 			case 'project.mapdisplay':
