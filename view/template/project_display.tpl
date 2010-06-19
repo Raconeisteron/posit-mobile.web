@@ -1,8 +1,10 @@
 {include file="header.tpl" title=$project.name tab="projects"}
 <h2>{$project.name}</h2>
 <div class="project_finds">
-<p><a href="projects">All Projects</a> <a href="expeditions?project_id={$project.id}">Expeditions</a></p>
-<a href="customPosit.list?project_id={$project.id}">Custom POSIT instance</a></p>
+<div id="secondary-menu">
+<a href="projects">All Projects</a>
+<a href="expeditions?project_id={$project.id}">Expeditions</a></p>
+</div>
 </div>
 	{foreach from=$finds item=find}
 	<div class="list-item">
