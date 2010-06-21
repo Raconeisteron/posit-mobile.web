@@ -71,6 +71,8 @@ function apiController($path, $request, $files = null) {
 					jsonError(ERR_SERVER, "Authentication Key cannot be generated");
 				}
 				 	
+			}else {
+				jsonError(AUTHN_FAILED,"Authentication failed. Please Check email address or password.");
 			}
 			break;
 		case 'registerUser':
@@ -94,13 +96,12 @@ function apiController($path, $request, $files = null) {
 			if($password1 != $password2){
 				jsonError(ERR_PASSWORD_UNMATCHED, "Passwords must match");
 			}
-			$newUser = array($email, $firstName, $lastName, $pass1);
-				
+			$newUser = array($email, $firstname, $lastname, $password1);
 			$result = $dao->registerUser($newUser);
 			if($result === REGISTRATION_EMAILEXISTS){
 				jsonError(ERR_EMAIL_INVALID, "Email already exists");
 			}
-			$smarty->assign('link', SERVER_BASE_URI."/verifyEmail?email=$email");
+			$smarty->assign('link', SERVER_BASE_URI."/web/verifyEmail?email=$email");
 			sendEmail($email, "email verification", $smarty->fetch("emails/new_user.tpl"));
 			jsonMessage(AUTHN_OK, "Registration Successful");
 
@@ -147,6 +148,10 @@ function apiController($path, $request, $files = null) {
 		case 'listMyProjects':
 			$result = $dao->getUserProjects($deviceUserId);
 			echo json_encode($result);
+			break;
+		case 'newProject':
+			$dao->newProject($name, $description, $deviceUserId);
+			
 			break;
 		case 'listFinds':
 			echo json_encode($dao->getFinds($request["project_id"]));

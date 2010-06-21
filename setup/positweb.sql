@@ -3,11 +3,11 @@
 -- http://www.phpmyadmin.net
 -- 
 -- Host: localhost
--- Generation Time: Feb 05, 2010 at 04:08 PM
+-- Generation Time: Jun 21, 2010 at 11:17 AM
 -- Server version: 5.0.32
 -- PHP Version: 5.2.0-8+etch7
 -- 
--- Database: `posit_rampositweb`
+-- Database: `posit_pgautam`
 -- 
 
 -- --------------------------------------------------------
@@ -59,7 +59,7 @@ CREATE TABLE `expedition` (
   `add_time` timestamp NOT NULL default CURRENT_TIMESTAMP,
   `modify_time` timestamp NOT NULL default '0000-00-00 00:00:00',
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=169 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=175 ;
 
 -- --------------------------------------------------------
 
@@ -81,7 +81,7 @@ CREATE TABLE `find` (
   `imei` varchar(50) NOT NULL,
   PRIMARY KEY  (`id`),
   KEY `project_id` (`project_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=16 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=30 ;
 
 -- --------------------------------------------------------
 
@@ -96,7 +96,7 @@ CREATE TABLE `find_history` (
   `action` varchar(20) NOT NULL,
   `imei` varchar(50) NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=23 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=37 ;
 
 -- --------------------------------------------------------
 
@@ -113,7 +113,7 @@ CREATE TABLE `gps_sample` (
   `altitude` double NOT NULL,
   `swath` bigint(17) NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=15916 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=16275 ;
 
 -- --------------------------------------------------------
 
@@ -133,7 +133,7 @@ CREATE TABLE `photo` (
   `imei` varchar(50) NOT NULL,
   PRIMARY KEY  (`id`),
   KEY `guid` (`guid`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=17 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=20 ;
 
 -- --------------------------------------------------------
 
@@ -148,7 +148,7 @@ CREATE TABLE `project` (
   `create_time` datetime NOT NULL,
   `permission_type` set('open','closed') NOT NULL default 'open',
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=34 ;
 
 -- --------------------------------------------------------
 
@@ -161,7 +161,7 @@ CREATE TABLE `sync_history` (
   `time` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
   `imei` varchar(50) NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=69 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=110 ;
 
 -- --------------------------------------------------------
 
@@ -179,7 +179,7 @@ CREATE TABLE `user` (
   `create_time` datetime NOT NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=6 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=14 ;
 
 -- --------------------------------------------------------
 
@@ -190,7 +190,7 @@ CREATE TABLE `user` (
 CREATE TABLE `user_project` (
   `user_id` int(11) NOT NULL,
   `project_id` int(11) NOT NULL,
-  `permission` set('yes','no') default NULL,
+  `role` set('owner','user') default NULL,
   KEY `user_id` (`user_id`,`project_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -208,3 +208,4 @@ CREATE TABLE `video` (
   PRIMARY KEY  (`id`),
   KEY `find_id` (`find_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+

@@ -180,6 +180,7 @@ class DAO {
 		$stmt->bindValue(":projectId", $lastId);
 		
 		$stmt->execute() or print_r($stmt->errorInfo()) && die();
+		return $this->db->lastInsertId();
 		//die("[Error " .__FILE__." at ".__LINE__."] ". $this->db->errorInfo());
 		/*$stmt = $this->db->prepare("INSERT INTO project (name) VALUES ('$name')");*/
 		
@@ -302,7 +303,7 @@ class DAO {
 		Log::getInstance()->log("getFinds: $projectId");
 
 		$stmt = $this->db->prepare("select id, barcode_id, name, description, add_time, modify_time,
-			latitude, longitude, revision from find where project_id = :projectId"
+			latitude, longitude, revision from find where project_id = :projectId order by add_time"
 		);	
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
@@ -312,13 +313,13 @@ class DAO {
 		foreach ($temp as $find) {
 //		echo "Find = " . $find["barcode_id"] . "<BR>";
 //			$stmt = $this->db->prepare("select id from photo where find_id = :id");
-			$stmt = $this->db->prepare("select imei, data_thumb from photo where guid = :id");
+			$this->db->prepare("select imei, id from photo where guid = :id");
 //			$stmt->bindValue(":id", $find["id"]);
 			$stmt->bindValue(":id", $find["barcode_id"]);
 			$stmt->execute();
 			$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			
-			$find["blah"] = "blah blah blah";
+
 			$find["images"] = array();
 			
 			foreach($imageResult as $image) {
@@ -326,8 +327,11 @@ class DAO {
 				$find["img"] = $img;
 //                        echo "<img src=" . $img . ">";
 //				$find["images"][] = $image["id"];
-				$find["images"][] = $image["guid"];
+				$find["images"][] = $image["id"];
 			}
+			//echo "<pre>";
+			//print_r($find["images"]);
+			//echo "</pre>";
 
 			$stmt = $this->db->prepare("select id from video where find_id = :id");
 			$stmt->bindValue(":id", $find["id"]);
