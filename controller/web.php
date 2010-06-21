@@ -43,7 +43,7 @@ function webController($path, $request) {
 				$smarty->assign("projects", $projects);
 				$smarty->display('maps.tpl');
 				break;
-		case 'login':
+			case 'login':
 				$smarty->display('header.tpl');
 				$smarty->display('login.tpl');
 				$smarty->display('footer.tpl');
@@ -104,12 +104,29 @@ function webController($path, $request) {
 				$smarty->display("expedition_tracker.tpl");
 				break;
 			case 'project.new':
+				$smarty->assign("error", $_SESSION["error"]);
+				$_SESSION["error"] = "";
 				$smarty->display("new_project.tpl");
 				break;
 			case 'project.new.do':
 				$name = $request["name"];
 				$description = $request["description"];
 				$loginId = $_SESSION["loginId"];
+				if ($name == ""){
+					$_SESSION["error"] = "Project name must be entered.";
+					header("Location: project.new");
+					break;
+				}else {
+					if (!validate_project_name($name)){
+						$_SESSION["error"] = "project name invalid.";
+						header("Location: project.new");
+						break;
+					}
+				}
+				if ($description != ""){
+					$description = 
+					$description = strip_tags($description , "<b>");
+				}
 				$dao->newProject($name, $description, $loginId);
 				header("Location: projects");
 				break;
@@ -159,8 +176,12 @@ function webController($path, $request) {
 				$id = $queryValue;
 				$project = $dao->getProject($id);
 				$smarty->assign("project", $project);
-				
+			
 				$finds = $dao->getFinds($id);
+				//$smarty->assign("images",$finds["images"]);
+				//echo "<pre>";
+				//print_r($finds[8]["images"]) &&die();
+				//echo "</pre>";
 				$smarty->assign("finds", $finds);
 				$smarty->display("project_display.tpl");
 				break;
@@ -173,7 +194,7 @@ function webController($path, $request) {
 				$project = $dao->getProject($project_id);;
 				
 				
-//				$smarty->assign("images",$find["images"]);
+				$smarty->assign("images",$find["images"]);
 //				$smarty->assign("videos",$find["videos"]);
 //				$smarty->assign("audioClips",$find["audioClips"]);
 				$smarty->assign("project", $project);

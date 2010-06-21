@@ -7,7 +7,7 @@
 	<br><b>Description: </b>{$find.description}
 	<br><b>Project: </b>{$project.name}
 	<br><b>Time Added: </b>{$find.add_time}
-	<br><b>Location: </b> [Longitude={$find.longitude},  Latitude={$find.latitude}]
+	<br><b>Location: </b> [Longitude={$find.longitude}, Latitude={$find.latitude}]
 
 <!-- 	<div class="find_description">{$find.description}</div> 
 	
@@ -28,7 +28,7 @@
 	<img src="http://maps.google.com/maps/api/staticmap?zoom=14&size=256x256&markers=color:red|{$find.latitude},{$find.longitude}&sensor=false&key={$smarty.const.GOOGLE_MAPS_KEY}"/>
 	
 	</div>
-	
+
 	<div class="picture_loop">
 	{foreach from=$images item=imageid}
 	<img src="displayPicture?id={$imageid}&size=full"/>
