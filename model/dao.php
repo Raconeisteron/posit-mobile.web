@@ -311,27 +311,15 @@ class DAO {
 		$result = array();
 		
 		foreach ($temp as $find) {
-//		echo "Find = " . $find["barcode_id"] . "<BR>";
-//			$stmt = $this->db->prepare("select id from photo where find_id = :id");
-			$this->db->prepare("select imei, id from photo where guid = :id");
-//			$stmt->bindValue(":id", $find["id"]);
+			$stmt =  $this->db->prepare("select id from photo where guid = :id");
 			$stmt->bindValue(":id", $find["barcode_id"]);
 			$stmt->execute();
 			$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			
-
 			$find["images"] = array();
 			
-			foreach($imageResult as $image) {
-				$img = "data:image/jpeg;base64," . base64_encode($image["data_thumb"]);
-				$find["img"] = $img;
-//                        echo "<img src=" . $img . ">";
-//				$find["images"][] = $image["id"];
+			foreach($imageResult as $image) 
 				$find["images"][] = $image["id"];
-			}
-			//echo "<pre>";
-			//print_r($find["images"]);
-			//echo "</pre>";
 
 			$stmt = $this->db->prepare("select id from video where find_id = :id");
 			$stmt->bindValue(":id", $find["id"]);

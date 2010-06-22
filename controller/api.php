@@ -150,6 +150,10 @@ function apiController($path, $request, $files = null) {
 			echo json_encode($result);
 			break;
 		case 'newProject':
+			extract($request);
+			if (!$name){
+				jsonError(ERR_NAME_INVALID, "Project Name is invalid.");
+			}
 			$dao->newProject($name, $description, $deviceUserId);
 			
 			break;
