@@ -176,12 +176,7 @@ function webController($path, $request) {
 				$id = $queryValue;
 				$project = $dao->getProject($id);
 				$smarty->assign("project", $project);
-			
 				$finds = $dao->getFinds($id);
-				//$smarty->assign("images",$finds["images"]);
-				//echo "<pre>";
-				//print_r($finds[8]["images"]) &&die();
-				//echo "</pre>";
 				$smarty->assign("finds", $finds);
 				$smarty->display("project_display.tpl");
 				break;

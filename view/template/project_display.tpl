@@ -5,7 +5,7 @@
 <a href="projects">All Projects</a>
 <a href="expeditions?project_id={$project.id}">Expeditions</a></p>
 </div>
-</div>dfgdg
+</div>
 	{foreach from=$finds item=find}
 	<div class="list-item">
 		<div class="find_name"><a href="find.display?id={$find.barcode_id}">{$find.name}</a></div>

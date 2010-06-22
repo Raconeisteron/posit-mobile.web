@@ -17,6 +17,8 @@
 * @license  http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
 * @version
 */
+//required for unique sessions 
+session_name(md5(SERVER_BASE_URI));
 
 function checkAuthn() {
 	global $dao;
