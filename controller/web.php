@@ -179,7 +179,6 @@ function webController($path, $request) {
 				$smarty->assign("project", $project);
 				$finds = $dao->getFinds($id);
 				$smarty->assign("finds", $finds);
-				print_r($finds);
 				$smarty->display("project_display.tpl");
 				break;
 			case 'find.display':
