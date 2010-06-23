@@ -22,4 +22,6 @@ define(ERR_EMAIL_INVALID, 			0x12);
 define(ERR_PASSWORD_MISSING, 		0x13);
 define(ERR_IMEI_MISSING, 			0x14);
 define(ERR_NAME_INVALID, 			0x15);
+define(PROJ_CREATE_SUCCESS,         0x16);
+define(PROJ_CREATE_FAIL,			0x17);
 ?>

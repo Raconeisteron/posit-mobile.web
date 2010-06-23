@@ -152,10 +152,14 @@ function apiController($path, $request, $files = null) {
 		case 'newProject':
 			extract($request);
 			if (!$name){
-				jsonError(ERR_NAME_INVALID, "Project Name is invalid.");
+				jsonError(ERR_NAME_INVALID, "Project name is invalid.");
 			}
-			$dao->newProject($name, $description, $deviceUserId);
-			
+			$result = $dao->newProject($name, $description, $deviceUserId);
+
+			if (is_string($result))
+				jsonMessage(PROJ_CREATE_SUCCESS, "Project created successfully.");
+			else
+				jsonError(PROJ_CREATE_FAIL,"Project creation failed.");
 			break;
 		case 'listFinds':
 			echo json_encode($dao->getFinds($request["project_id"]));

@@ -181,7 +181,8 @@ class DAO {
 		$stmt->bindValue(":projectId", $lastId);
 		
 		$stmt->execute() or print_r($stmt->errorInfo()) && die();
-		return $this->db->lastInsertId();
+
+		return "Project with ID " . $lastId . "inserted successfully.";
 		//die("[Error " .__FILE__." at ".__LINE__."] ". $this->db->errorInfo());
 		/*$stmt = $this->db->prepare("INSERT INTO project (name) VALUES ('$name')");*/
 		
@@ -198,11 +199,11 @@ class DAO {
 		); 
 		
 		$stmt->bindValue(":authKey", $authKey);
-			
 		$stmt->execute();
 		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 		if(is_array($result))
-			$this->newProject($name, $description, $result["user_id"]);
+			$this->newProject($name, $description, $result[0]["user_id"]);
 	}
 	/**
 	 * gets an associative array of all the projects that are accessible to the entity
