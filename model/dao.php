@@ -53,15 +53,16 @@ class DAO {
 	 *  returns a comma-delimited list of all finds since last sync for a given device
 	 *  @param unknown_type $imei the device's id
 	 */
-	 function getDeltaFindsIds($imei, $pid) {
-	 	Log::getInstance()->log("getDeltaFindsIds: $imei");
+	 function getDeltaFindsIds($auth_key, $pid) {
+	 	Log::getInstance()->log("getDeltaFindsIds: $auth_key");
 		
 		// Get the timestamp of the last sync with this device
 		$stmt = $this->db->prepare(
-			"SELECT MAX(sync_history.time) FROM sync_history WHERE imei = :imei"); 
-		$stmt->bindValue(":imei", $imei);
+			"SELECT MAX(sync_history.time) FROM sync_history WHERE auth_key = :auth_key"); 
+		$stmt->bindValue(":auth_key", $auth_key);
 		$stmt->execute();
 		$result = $stmt->fetch(PDO::FETCH_NUM);
+		//print_r($result);
 		$time = $result[0];
 		Log::getInstance()->log("getDeltaFindsIds: Max Time = |$time|");
                 
@@ -72,17 +73,17 @@ class DAO {
 			Log::getInstance()->log("getDeltaFindsIds: IF time = $time");	
 //		        $res = mysql_query("SELECT DISTINCT find_guid FROM find_history WHERE imei != '$imei'") or die(mysql_error());  
 		        $res = mysql_query(
-			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE find_history.imei != '$imei' AND find.barcode_id=find_history.find_guid AND find.project_id = '$pid'") 
+			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE find_history.auth_key != '$auth_key' AND find.guid=find_history.find_guid AND find.project_id = '$pid'") 
 			or die(mysql_error());  
                 } else {
 			Log::getInstance()->log("getDeltaFindsIds: ELSE time = $time");	
 //       		        $res = mysql_query("SELECT DISTINCT find_guid FROM find_history WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0") or die(mysql_error());  
        		        $res = mysql_query(
-			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0 AND find.barcode_id=find_history.find_guid AND find.project_id = '$pid'") 
+			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0 AND find.guid=find_history.find_guid AND find.project_id = '$pid'") 
 			or die(mysql_error());  
                 }
 
-//SELECT DISTINCT find_history.find_guid FROM find_history, find WHERE find_history.imei != '351677030043731' AND find.barcode_id = find_history.find_guid AND find.project_id = 6
+//SELECT DISTINCT find_history.find_guid FROM find_history, find WHERE find_history.imei != '351677030043731' AND find.guid = find_history.find_guid AND find.project_id = 6
 
 
 		// Get a list of the Finds (guids) that have changed since the last update
@@ -302,7 +303,7 @@ class DAO {
 	function getFinds($projectId) {
 		Log::getInstance()->log("getFinds: $projectId");
 
-		$stmt = $this->db->prepare("select id, barcode_id, name, description, add_time, modify_time,
+		$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
 			latitude, longitude, revision from find where project_id = :projectId order by add_time"
 		);	
 		$stmt->bindValue(":projectId", $projectId);
@@ -312,7 +313,7 @@ class DAO {
 		
 		foreach ($temp as $find) {
 			$stmt =  $this->db->prepare("select id from photo where guid = :id");
-			$stmt->bindValue(":id", $find["barcode_id"]);
+			$stmt->bindValue(":id", $find["guid"]);
 			$stmt->execute();
 			$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			
@@ -355,10 +356,10 @@ class DAO {
 	function getFind($guid) {
 		Log::getInstance()->log("getFind: $guid");
 
-//		$stmt = $this->db->prepare("select id, project_id, barcode_id, name, description, add_time, modify_time, 
+//		$stmt = $this->db->prepare("select id, project_id, guid, name, description, add_time, modify_time, 
 //			latitude, longitude, revision from find where id = :id");
-		$stmt = $this->db->prepare("select project_id, barcode_id, name, description, add_time, modify_time, 
-			latitude, longitude, revision from find where barcode_id = :guid");		
+		$stmt = $this->db->prepare("select project_id, guid, name, description, add_time, modify_time, 
+			latitude, longitude, revision from find where guid = :guid");		
 		$stmt->bindValue(":guid", $guid);
 		$stmt->execute();
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -539,7 +540,7 @@ class DAO {
 	function deleteFind($findId) {
 		Log::getInstance()->log("deleteFind: $findId");
 
-		$stmt = $this->db->prepare("delete from find where barcode_id = :findId");
+		$stmt = $this->db->prepare("delete from find where guid = :findId");
 		$stmt->bindvalue(":findId", $findId);
 		$stmt->execute();
 		$this->deleteImages($findId);
@@ -659,22 +660,23 @@ class DAO {
 	 * @param unknown_type $longitude
 	 * @param unknown_type $revision
 	 */
-	function createFind($imei, $guId, $projectId, $name, $description, $latitude, $longitude, $revision) {
+	function createFind($auth_key, $imei, $guId, $projectId, $name, $description, $latitude, $longitude, $revision) {
 		Log::getInstance()->log("createFind: $guId, $projectId, $name, $description, $latitude, $longitude, $revision");
 		$stmt = $this->db->prepare(
-			"insert into find (imei, barcode_id, project_id, name, description, 
-			latitude, longitude, add_time, modify_time, revision) VALUES
-			(:imei, :barcode_id, :projectId, :name, :description, :latitude, :longitude ,now(), now(), :revision)"
+			"insert into find (imei, guid, project_id, name, description, 
+			latitude, longitude, add_time, modify_time, revision,auth_key) VALUES
+			(:imei, :guid, :projectId, :name, :description, :latitude, :longitude ,now(), now(), :revision, :auth_key)"
 		);
 		
 		$stmt->bindValue(":imei", $imei);
-		$stmt->bindValue(":barcode_id", $guId);
+		$stmt->bindValue(":guid", $guId);
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->bindValue(":name", $name);
 		$stmt->bindValue(":description", $description);
 		$stmt->bindValue(":latitude", $latitude);
 		$stmt->bindValue(":longitude", $longitude);
 		$stmt->bindValue(":revision", $revision);
+		$stmt->bindValue(":auth_key", $auth_key);
 		$stmt->execute(); 
 		
 		$findid = $this->db->lastInsertId();
@@ -682,12 +684,13 @@ class DAO {
 		
 		// Make an entry in find_history
 		$stmt = $this->db->prepare(
-			"insert into find_history (find_guid, action, imei) VALUES
-			(:find_guid, :action, :imei)"
+			"insert into find_history (find_guid, action, imei, auth_key) VALUES
+			(:find_guid, :action, :imei, :auth_key)"
 		);
 		$stmt->bindValue(":find_guid", $guId);
 		$stmt->bindValue(":action", "create");	
-		$stmt->bindValue(":imei", $imei);	
+		$stmt->bindValue(":imei", $imei);
+		$stmt->bindValue(":auth_key", $auth_key);
 		$stmt->execute();
 		
 		$lastid = $this->db->lastInsertId();
@@ -703,10 +706,10 @@ class DAO {
 	 * @param unknown_type $description
 	 * @param unknown_type $revision
 	 */
-	function updateFind($imei, $guId, $projectId, $name, $description, $revision) {
-		Log::getInstance()->log("updateFind: $imei, $guId, $projectId, $name, $description, $revision");
+	function updateFind($auth_key,$imei, $guId, $projectId, $name, $description, $revision) {
+		Log::getInstance()->log("updateFind: $auth_key, $imei, $guId, $projectId, $name, $description, $revision");
 		$stmt = $this->db->prepare("update find set name = :name, description = :description, 
-			revision = :revision, modify_time = NOW() where barcode_id = :guid AND project_id = :projectId");
+			revision = :revision, modify_time = NOW() where guid = :guid AND project_id = :projectId");
 		
 		$stmt->bindValue(":name", $name);
 		$stmt->bindValue(":description", $description);
@@ -718,11 +721,12 @@ class DAO {
 
 		// Make an entry in find_history
 		$stmt = $this->db->prepare(
-			"insert into find_history (find_guid, action, imei) VALUES (:find_guid, :action, :imei)"
+			"insert into find_history (find_guid, action, imei, auth_key) VALUES (:find_guid, :action, :imei, :auth_key)"
 		);
 		$stmt->bindValue(":find_guid", $guId);
 		$stmt->bindValue(":action", "update");	
 		$stmt->bindValue(":imei", $imei);	
+		$stmt->bindValue(":auth_key", $auth_key);
 		$stmt->execute();
 		Log::getInstance()->log("Updated find_history, updated Find $guId $imei");
 		return "True Updated $guId on server";

@@ -3,7 +3,7 @@
 <h2>Name: {$find.name}</h2>
 <div class="find_details">
 <!-- 	<div class="find_img"><IMG src={$find.img} width="40" height="40"></div>  -->
-	<p><b>GUID: </b>{$find.barcode_id}
+	<p><b>GUID: </b>{$find.guid}
 	<br><b>Description: </b>{$find.description}
 	<br><b>Project: </b>{$project.name}
 	<br><b>Time Added: </b>{$find.add_time}
@@ -17,7 +17,7 @@
 	<h3>Time Added:</h3>
 	<div class="find_add_time">{$find.add_time}</div>
 	<h3> GUID:</h3>
-	<div class="associated_barcode">{$find.barcode_id}</div>
+	<div class="associated_barcode">{$find.guid}</div>
 	<h3>Location:</h3>
 	<div class="find_location">
 		Longitude: {$find.longitude}
