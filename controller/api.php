@@ -108,7 +108,7 @@ function apiController($path, $request, $files = null) {
 			break;
 		case 'getDeltaFindsIds':
 			//			echo $dao->getDeltaFindsIds($deviceIdentifier);
-			echo $dao->getDeltaFindsIds($deviceIdentifier, $request["projectId"]);
+			echo $dao->getDeltaFindsIds($authKey, $request["projectId"]);
 			break;
 		case 'recordSync':
 			echo $dao->recordSync($deviceIdentifier);
@@ -174,11 +174,11 @@ function apiController($path, $request, $files = null) {
 			$dao->deleteAllFinds($request["projectId"]);
 			break;
 		case 'createFind':
-			echo $dao->createFind($request["imei"], $request["guid"], $request["project_id"],
+			echo $dao->createFind($authKey, $request["imei"], $request["guid"], $request["project_id"],
 			$request["name"], $request["description"], $request["latitude"], $request["longitude"], $request["revision"]);
 			break;
 		case 'updateFind':
-			echo $dao->updateFind($request["imei"],$request["guid"],$request["project_id"],$request["name"], $request["description"], $request["revision"]);
+			echo $dao->updateFind($authKey, $request["imei"],$request["guid"],$request["project_id"],$request["name"], $request["description"], $request["revision"]);
 			break;
 
 		case 'attachPicture':

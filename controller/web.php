@@ -22,6 +22,7 @@ function webController($path, $request) {
 	$loginId = $_SESSION["loginId"];
 	if($loginId) {
 		$loginUser = $dao->getUser($loginId);
+		
 		if($loginUser["privileges"] == "admin")
 			$loginHasAdmin = true;
 		else
@@ -178,12 +179,14 @@ function webController($path, $request) {
 				$smarty->assign("project", $project);
 				$finds = $dao->getFinds($id);
 				$smarty->assign("finds", $finds);
+				print_r($finds);
 				$smarty->display("project_display.tpl");
 				break;
 			case 'find.display':
 				list($queryType, $queryValue) = explode("=", $queryString);
 				$id = $queryValue;
 				$find = $dao->getFind($id);
+				
 //				$find = $dao->getFind($find["barcode_id"]);
 				$project_id = $find["project_id"];
 				$project = $dao->getProject($project_id);;
