@@ -1,2 +1,3 @@
-syntax:glob
-cache/compile
+syntax:regex
+^cache/compile/.+php$
+^config.php$

@@ -36,6 +36,9 @@ function webController($path, $request) {
 			case 'main':
 				$smarty->display('main.tpl');
 				break;
+			case 'build':
+				$smarty->display('build.tpl');
+				break;
 			case '404':
 				$smarty->display('404.tpl');
 				break;
