@@ -147,6 +147,7 @@ CREATE TABLE `project` (
   `description` text NOT NULL,
   `create_time` datetime NOT NULL,
   `permission_type` set('open','closed') NOT NULL default 'open',
+  `deleted` tinyint(1) NOT NULL default 0,
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=34 ;
 
