@@ -213,11 +213,11 @@ class DAO {
 		Log::getInstance()->log("getProjects: $permissionType");
 
 		if($permissionType == PROJECTS_OPEN)
-			$whereClause = "where permission_type = 'open'";
+			$whereClause = "where permission_type = 'open' and deleted=0";
 		else if($permissionType == PROJECTS_CLOSED)
-			$whereClause = "where permission_type = 'closed'";
+			$whereClause = "where permission_type = 'closed' and deleted=0";
 		else
-			$whereClause = "";
+			$whereClause = "where deleted=0";
 			
 		$stmt = $this->db->prepare(
 			"select id, name, description, create_time, permission_type
@@ -239,11 +239,7 @@ class DAO {
 	    Log::getInstance()->log("getUserProjects: $userId");
 
 		$stmt = $this->db->prepare(
-			"SELECT project.name, project.id, project.description, user_project.role
-			 FROM project 
-			 JOIN user_project
-			 ON project.id = user_project.project_id 
-			 AND user_project.user_id = :userId"
+			"SELECT * FROM project_active"
 		);
 		
 		$stmt->bindValue(":userId", $userId);

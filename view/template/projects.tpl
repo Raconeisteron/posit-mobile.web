@@ -12,7 +12,8 @@
 		<div class="list-item">
 			<a href="project.display?id={$project.id}" class="project-name">{$project.name}</a>
 			<span class="project-role">{$project.role}</span>
-			<p class="project-description">{$project.description}</p>
+			<p class="project-description">{$project.description}<br /></p>
+			<p style="text-align:right"><a href="project.delete?id={$project.id}">Delete Project</a></p>
 		</div>
 		{/foreach}
 	{else}
