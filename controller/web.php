@@ -162,6 +162,17 @@ function webController($path, $request) {
 				$projects = $dao->shareProject($loginId, $userId, $projectId);
 				header("Location: projects");
 				break;
+			case 'project.delete':
+				$project_id = $request["id"];
+				$project = $dao->getProject($project_id);
+				$smarty->assign("project",$project);
+				$smarty->display("delete_project.tpl");
+				break;
+			case 'project.delete.do':
+				$project_id = $request["id"];
+				$dao->deleteProject($project_id);
+				header("Location: projects");
+				break;
 			case 'project.mapdisplay':
 				list($queryType, $queryValue) = explode("=", $queryString);
 				$id = $queryValue;
