@@ -239,8 +239,12 @@ class DAO {
 	    Log::getInstance()->log("getUserProjects: $userId");
 
 		$stmt = $this->db->prepare(
-			"SELECT * FROM project_active"
-		);
+			"SELECT project.name, project.id, project.description, user_project.role
+			 FROM project 
+			 JOIN user_project
+			 ON project.id = user_project.project_id 
+			 AND user_project.user_id = :userId"
+			);
 		
 		$stmt->bindValue(":userId", $userId);
 		$stmt->execute();
