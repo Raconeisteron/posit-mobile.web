@@ -88,6 +88,7 @@ function webController($path, $request) {
 				break;
 			case 'projects':
 				$loginId = $_SESSION["loginId"];
+				print_r($_SESSION);
 				$projects = $dao->getUserProjects($loginId);
 				$smarty->assign("projects", $projects);
 				$smarty->display("projects.tpl");
