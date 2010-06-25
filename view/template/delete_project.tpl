@@ -10,11 +10,11 @@
 		</p>
 		<p>
 			<form action="project.delete.do?id={$project.id}" method="post" style="display:inline">
-				<input type="submit" name="del_submit" value="Delete">
+				<input type="submit" name="del_submit" value="Confirm Delete">
 				<input type="hidden" name="project_id" value="{$project.id}">
 			</form>
 			<form action="projects" method="get" style="display:inline">
-				<input type="submit" name="delSubmit" value="No Thanks">
+				<input type="submit" name="del_submit" value="No Thanks">
 			</form>
 		</p>
 </div>

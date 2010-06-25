@@ -1,6 +1,10 @@
 {include file="header.tpl" title=$find.name tab="projects"}
-<p><a href="project.display?id={$find.project_id}">All Finds</a></p>
-<h2>Name: {$find.name}</h2>
+
+<h2>Name: {$find.name}</h2><nobr>
+<div id="secondary-menu">
+	<a href=""find.delete?id={$find.guid}">Delete Find</a>
+	<a href="project.display?id={$find.project_id}">All Finds</a>
+</div>
 <div class="find_details">
 <!-- 	<div class="find_img"><IMG src={$find.img} width="40" height="40"></div>  -->
 	<p><b>GUID: </b>{$find.guid}

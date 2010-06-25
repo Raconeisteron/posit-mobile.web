@@ -3,7 +3,6 @@
 <div class="project_finds">
 <div id="secondary-menu">
 <a href="projects">All Projects</a>
-<a href="expeditions?project_id={$project.id}">Expeditions</a>
 <a href="project.delete?id={$project.id}">Delete Project</a></p>
 </div>
 </div>
@@ -18,6 +17,7 @@
 		{foreach from=$find.images item=imageid}
 		<img src="displayPicture?id={$imageid}&size=thumb" height=40 width=40 />
 		{/foreach}
+		<p style="text-align:right"><a href="find.delete?id={$find.guid}">Delete Find</a></p>
 		</div>
 	<!-- enable this for psychedelic color<div class="list-item"> -->
 	</div>

@@ -169,11 +169,24 @@ function webController($path, $request) {
 				$smarty->assign("project",$project);
 				$smarty->display("delete_project.tpl");
 				break;
+			case 'find.delete':
+				$find_id = $request["id"];
+				$find = $dao->getFind($find_id);
+				$smarty->assign("find",$find);
+				$smarty->display("delete_find.tpl");
+				break;
 			case 'project.delete.do':
 				$project_id = $request["id"];
 				$dao->deleteProject($project_id);
 				header("Location: projects");
 				break;
+			case 'find.delete.do':
+				$find_id = $request["id"];
+				$find = $dao->getFind($find_id);
+				$location = "project.display?id=".$find["project_id"];
+				$dao->deleteFind($find_id);
+				header("Location: ".$location);
+				//THIS LINE WILL PROBABLY NEED TO BE CHNANGED TO SPECIFY THE PROJECT ID...
 			case 'project.mapdisplay':
 				list($queryType, $queryValue) = explode("=", $queryString);
 				$id = $queryValue;
