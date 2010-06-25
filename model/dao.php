@@ -243,7 +243,8 @@ class DAO {
 			 FROM project 
 			 JOIN user_project
 			 ON project.id = user_project.project_id 
-			 AND user_project.user_id = :userId"
+			 AND user_project.user_id = :userId
+			 WHERE deleted=0"
 			);
 		
 		$stmt->bindValue(":userId", $userId);
@@ -263,7 +264,8 @@ class DAO {
 			 FROM project 
 			 JOIN user_project
 			 ON project.id = user_project.project_id 
-			 AND user_project.user_id = :ownerId AND user_project.role = 'owner'"
+			 AND user_project.user_id = :ownerId AND user_project.role = 'owner'
+			 WHERE deleted=0"
 		);
 		
 		$stmt->bindValue(":ownerId", $ownerId);
@@ -305,7 +307,7 @@ class DAO {
 		Log::getInstance()->log("getFinds: $projectId");
 
 		$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
-			latitude, longitude, revision from find where project_id = :projectId order by add_time"
+			latitude, longitude, revision from find where project_id = :projectId and deleted=0 order by add_time"
 		);	
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
@@ -534,10 +536,14 @@ class DAO {
 		else
 			return false;
 	}
+	
 	/**
 	 * delete a find
 	 * @param unknown_type $findId
+	 * THIS FUNCTION WILL BE COMMENTED OUT TEMPORARILY IN FAVOR OF ITS DUPLICATE
 	 */
+	 
+	 /*
 	function deleteFind($findId) {
 		Log::getInstance()->log("deleteFind: $findId");
 
@@ -559,6 +565,7 @@ class DAO {
 		$lastid = $this->db->lastInsertId();
 		Log::getInstance()->log("Updated find_history, lastInsertId()=$lastid");
 	}
+	/*
 	
 	function addExpedition($projectId){
 		$stmt = $this->db->prepare("INSERT INTO expedition ( project_id ) VALUES (:projectId)");
@@ -613,14 +620,31 @@ class DAO {
 	/**
 	 * delete the given project
 	 * @param unknown_type $id
+	 * NOTE: This delete function does not delete a project per se, but rather flags it
+	 *       as deleted rendering it hidden but keeping it in the databasee.
 	 */
 	function deleteProject($id) {
 		Log::getInstance()->log("deleteProject: $id");
 
-		$stmt = $this->db->prepare("delete from project where id = :id");
+		$stmt = $this->db->prepare("update project set deleted=1 where id= :id");
 		$stmt->bindValue(":id", $id);
 		$stmt->execute();
 	}
+	
+	/**
+	 * delete the given find
+	 * @param unknown_type $guid
+	 * NOTE: This delete function does not delete a project per se, but rather flags it
+	 *       as deleted rendering it hidden but keeping it in the databasee.
+	 */
+	 function deleteFind($guid) {
+	 	Log::getInstance()->log("deleteFind: $guid");
+	 		 	
+	 	$stmt = $this->db->prepare("update find set deleted=1 where guid = :guid");
+	 	$stmt->bindValue(":guid", $guid);
+	 	$stmt->execute();
+	 }
+	 
 	/**
 	 * delete the image associated with the id
 	 * @param unknown_type $findId
