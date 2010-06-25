@@ -161,6 +161,11 @@ function apiController($path, $request, $files = null) {
 			else
 				jsonError(PROJ_CREATE_FAIL,"Project creation failed.");
 			break;
+		case 'projectExists':
+			if ($request["projectId"]){
+				echo $dao->projectExists($request["projectId"]);
+			}
+			break;
 		case 'listFinds':
 			echo json_encode($dao->getFinds($request["project_id"]));
 			break;
