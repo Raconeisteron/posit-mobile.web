@@ -86,9 +86,22 @@ function webController($path, $request) {
 				$_SESSION["loginEmail"] = $email;
 				header("Location: main");
 				break;
+			case 'admin.logs':
+				//var_dump($request);
+				$pageNum=$request["page"];
+				if(!$request["page"])
+					$pageNum=1;
+				$numPages=$dao->numLogPages();
+				$numArray = range(1,$numPages);
+				$logs=$dao->getLogs($pageNum);
+				$smarty->assign("numPages",$numPages);
+				$smarty->assign("pageNum",$pageNum);
+				$smarty->assign("numArray",$numArray);
+				$smarty->assign("logs",$logs);
+				$smarty->display("logs.tpl");
+				break;
 			case 'projects':
 				$loginId = $_SESSION["loginId"];
-				print_r($_SESSION);
 				$projects = $dao->getUserProjects($loginId);
 				$smarty->assign("projects", $projects);
 				$smarty->display("projects.tpl");

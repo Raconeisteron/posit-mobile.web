@@ -90,7 +90,8 @@ class DAO {
 
 		while ($row = mysql_fetch_row($res)) {
 			$list .= "$row[0],";
-		}    				
+		}
+		$this->createLog("I","getDeltaFindsIds",$list);    				
 		Log::getInstance()->log("getDeltaFindsIds: $list");
 		return $list;
 	 }
@@ -100,23 +101,56 @@ class DAO {
 	 * @param unknown_type $imei
 	 */
 	 function recordSync($imei) {
-		Log::getInstance()->log("recordSycn: $imei");
+	 	$this->createLog("I","recordSync","Imei:".$imei);
 		$stmt = $this->db->prepare(
 			"INSERT INTO sync_history (imei) VALUES (:imei)"
 		); 
 		$stmt->bindValue(":imei", $imei);
 		$stmt->execute();
 		$lastid = $this->db->lastInsertId();
-		Log::getInstance()->log("lastInsertId()=$lastid");
+		$this->createLog("I","lastInsertId","Last id = ".$lastid);
 		return $lastid;
 	 }
 	 
+	 /**
+	  * Creates an entry in the log table
+	  */
+	 function createLog($type,$tag,$message){
+	 	$stmt=$this->db->prepare("INSERT INTO logs (type,tag,message) VALUES(:type,:tag,:message)");
+	 	$stmt->bindValue(":type",$type);
+	 	$stmt->bindValue(":tag",$tag);
+	 	$stmt->bindValue(":message",$message);
+	 	$stmt->execute();
+	 }
+	 	 /**
+	 * Returns the logs for the selected page number
+	 */
+	 function numLogPages(){
+	 	$stmt=$this->db->prepare("SELECT COUNT(id) from logs");
+	 	$stmt->execute();
+	 	$result=$stmt->fetch(PDO::FETCH_NUM);
+		$numPages=ceil($result[0]/30);
+	 	return $numPages;
+	 }
+	 /**
+	 * Returns the logs for the selected page number
+	 */
+	 function getLogs($pageNumber){
+		$minPage=($pageNumber-1)*30;
+		$maxPage=30;
+		$stmt=$this->db->prepare("SELECT * FROM logs LIMIT :minPage,:maxPage");
+	 	$stmt->bindValue(":minPage",$minPage);
+	 	$stmt->bindValue(":maxPage",$maxPage);
+	 	$stmt->execute();
+	 	$result=$stmt->fetchAll(PDO::FETCH_ASSOC);
+	 	return $result;
+	 }
 	/**
 	 * get user from the user ID
 	 * @param unknown_type $userId
 	 */
 	function getUser($userId) {
-		Log::getInstance()->log("getUser: $userId");
+		$this->createLog("I","getUser","$userId");
 
 		$stmt = $this->db->prepare(
 			"SELECT email, first_name, last_name, privileges, create_time FROM user WHERE id = :userId"
@@ -154,10 +188,9 @@ class DAO {
 	 * @param unknown_type $description
 	 */
 	function newProject($name, $description, $userId) {
-		Log::getInstance()->log("newProject: $name, $description");
+		$this->createLog("I","New Project","Name:".$name." Description:".$description."User ID: ".$userId);		
 
 		$name = addslashes($name);
-		Log::getInstance()->log($description);
 		$description = addslashes($description);
 		$stmt = $this->db->prepare(
 			"INSERT INTO project (name, description) VALUES (:name, :description)"
@@ -226,7 +259,7 @@ class DAO {
 //		$stmt->execute();
 		$stmt->execute() or die("[Error MySQl on ".__FILE__."at ".__LINE__."]" . mysql_error());
 		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-		Log::getInstance()->log("getProjects: $result");
+		$this->createLog("I","getProjects"," $result");
 
 		return $result;
 	}
@@ -236,7 +269,7 @@ class DAO {
 	 * @param unknown_type $userId
 	 */
 	function getUserProjects($userId) {
-	    Log::getInstance()->log("getUserProjects: $userId");
+	    $this->createLog("I","getUserProjects"," $userId");
 
 		$stmt = $this->db->prepare(
 			"SELECT project.name, project.id, project.description, user_project.role
@@ -384,12 +417,12 @@ class DAO {
 		
 /*********
 		foreach ($temp[0] as $key=>$value) {
-			Log::getInstance()->log("getFind temp: $key = $value");
+			$this->createLog("I","getFind temp: $key = $value");
 		}    				
 ***************/
 		$result = array();
 		$result[0]= $temp[0];
-		Log::getInstance()->log("getFind length of record: " . count($result[0]));
+		$this->createLog("I","getFind length of record"," " . count($result[0]));
 
 		$result[0]["images"] = array();
 		
@@ -433,7 +466,7 @@ class DAO {
 	 * @param $id
 	 */
 	function getProject($id) {
-		Log::getInstance()->log("getProject: $id");
+		$this->createLog("I","getProject"," $id");
 
 		$stmt = $this->db->prepare(
 			"select id, name, create_time, permission_type
@@ -463,7 +496,7 @@ class DAO {
 	 * @param unknown_type $pictureId
 	 */
 	function getPicture($pictureId){
-		Log::getInstance()->log("getPicture: $pictureId");
+		$this->createLog("I","getPicture"," $pictureId");
 
 		$stmt = $this->db->prepare(
 			"select id,guid,mime_type,data_full,data_thumb from photo
@@ -480,7 +513,7 @@ class DAO {
 	 * @param unknown_type $findId
 	 */
 	function getPicturesByFind($guid){
-		Log::getInstance()->log("getPicturesByFind: $guid");
+		$this->createLog("I","getPicturesByFind"," $guid");
 		$stmt = $this->db->prepare(
 			"select guid,mime_type,data_full,data_thumb, project_id, identifier from photo
 			where guid = :guid"
@@ -589,7 +622,7 @@ class DAO {
 	}
 	
 	function getExpeditions($projectId){
-		Log::getInstance()->log("getExpeditions: $projectId");
+		$this->createLog("I","getExpeditions"," $projectId");
 		$stmt = $this->db->prepare("SELECT id, name, description, project_id FROM expedition WHERE project_id= :projectId ");
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
@@ -611,7 +644,7 @@ class DAO {
 	 * @param unknown_type $projectId
 	 */
 	function deleteAllFinds($projectId) {
-		Log::getInstance()->log("deleteAllFinds: $projectId");
+		$this->createLog("I","deleteAllFinds"," $projectId");
 
 		$stmt = $this->db->prepare("delete from find where project_id = :projectId");
 		$stmt->bindValue(":projectId", $projectId);
@@ -705,7 +738,7 @@ class DAO {
 		$stmt->execute(); 
 		
 		$findid = $this->db->lastInsertId();
-		Log::getInstance()->log("lastInsertId()=$findid");
+		$this->createLog("I","createFind","lastInsertId()=$findid");
 		
 		// Make an entry in find_history
 		$stmt = $this->db->prepare(
@@ -719,7 +752,7 @@ class DAO {
 		$stmt->execute();
 		
 		$lastid = $this->db->lastInsertId();
-		Log::getInstance()->log("Updated find_history, created lastInsertId()=$lastid");
+		$this->createLog("I","createFind","Updated find_history, created lastInsertId()=$lastid");
 
 //		return $findid; //get the rowid where it's inserted so that the client can sync.. @todo update in API
 		return "True Created $guId in row=$findid";  
@@ -742,7 +775,7 @@ class DAO {
 		$stmt->bindValue(":guid", $guId);
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
-		Log::getInstance()->log("Updated Find= $guId");
+		$this->createLog("I","updateFind","Updated Find= $guId");
 
 		// Make an entry in find_history
 		$stmt = $this->db->prepare(
@@ -769,7 +802,7 @@ class DAO {
 	//		    $request["mime_type"], $request["timestamp"], $imagedata, $imagethumbdata);
 
 	function addPictureToFind($imei, $guid, $identifier, $project_id,  $mime_type, $timestamp, $dataFull, $dataThumb) {
-		Log::getInstance()->log("addPictureToFind: $imei, $guid, $identifier, $mimeType");
+		$this->createLog("I","addPictureToFind"," $imei, $guid, $identifier, $mimeType");
 
 		$stmt = $this->db->prepare(
 			"insert into photo (imei, guid, identifier, project_id,  mime_type, timestamp, data_full, data_thumb)
@@ -784,10 +817,10 @@ class DAO {
 		$stmt->bindValue(":dataFull",$dataFull);
 		$stmt->bindValue(":dataThumb",$dataThumb);
 		$stmt->execute();
-		Log::getInstance()->log("addPictureToFind: $imei, $guid, $identifier, $mimeType");
+		$this->createLog("I","addPictureToFind"," $imei, $guid, $identifier, $mimeType");
 		
 		$lastid = $this->db->lastInsertId();
-		Log::getInstance()->log("Updated photos for Find $guid, created record lastInsertId()=$lastid");
+		$this->createLog("I","addPictureToFind","Updated photos for Find $guid, created record lastInsertId()=$lastid");
 		return "True Created photo record $guId in row=$lastid";  
 		//return $stmt->fetch(PDO::FETCH_ASSOC);
 	}
@@ -888,7 +921,7 @@ class DAO {
 	 * @param $newUser
 	 */
 	function registerUser($newUser) {
-		Log::getInstance()->log("registerUser: $newUser");
+		$this->createLog("I","registerUser"," $newUser");
 		list($email, $firstName, $lastName, $password) = $newUser;
 		
 		$stmt = $this->db->prepare(
@@ -918,7 +951,7 @@ class DAO {
 	 * @param unknown_type $userId
 	 */
 	function getDevicesByUser($userId) {
-		Log::getInstance()->log("getDevicesByUser: $userId");
+		$this->createLog("I","getDevicesByUser","$userId");
 		$stmt = $this->db->prepare(
 			"SELECT imei, name, auth_key, add_time
 			 FROM device
@@ -934,7 +967,7 @@ class DAO {
 	 * @param unknown_type $authKey
 	 */
 	function getDeviceByAuthKey($authKey) {
-//		Log::getInstance()->log("getDeviceByAuthKey: $authKey");
+//		$this->createLog("I","getDeviceByAuthKey: $authKey");
 		$stmt = $this->db->prepare(
 			"SELECT imei, name, user_id, add_time, status
 			 FROM device
@@ -951,7 +984,7 @@ class DAO {
 	 */
 	function registerDevicePending($userId, $authKey) {
 //		print_r(array($userId, $authKey));
-		Log::getInstance()->log("registerDevicePending: $userId, $authKey");
+		$this->createLog("I","registerDevicePending","$userId, $authKey");
 		if(!$userId || !$authKey) return false;
 		$stmt = $this->db->prepare(
 			"INSERT INTO device (user_id, auth_key, add_time)
@@ -972,7 +1005,7 @@ class DAO {
 	 * @param unknown_type $name
 	 */
 	function confirmDevice($authKey, $imei, $name) {
-		Log::getInstance()->log("confirmDevice: $authKey, $imei, $name");
+		$this->createLog("I","confirmDevice", $authKey." ".$imei." ".$name);
 
 		$stmt = $this->db->prepare(
 			"SELECT auth_key FROM device WHERE imei = :imei"
@@ -1025,7 +1058,7 @@ class DAO {
 	 * @param unknown_type $imei
 	 */
 	function addSandboxDevice($authKey, $imei) {
-		log("addSandboxDevice " .$authKey . " " . $imei);
+		$this->createLog("I","addSandboxDevice ",$authKey . " " . $imei);
 		$stmt = $this->db->prepare("delete from device where imei = :imei");
 		$stmt->bindValue(":imei", $imei);
 		$stmt->execute();
@@ -1136,6 +1169,16 @@ class DAO {
 		}
 		return $available_values;
 
+	}
+	function projectExists ($project_id){
+		$project= $this->getProject($project_id);
+		if (is_array($project)){
+			if (count($project)==1){
+				return true;
+			}
+		}else {
+			return false;
+		}
 	}
 }
 
