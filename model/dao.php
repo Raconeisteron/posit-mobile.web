@@ -116,11 +116,14 @@ class DAO {
 	  * Creates an entry in the log table
 	  */
 	 function createLog($type,$tag,$message){
-	 	$stmt=$this->db->prepare("INSERT INTO logs (type,tag,message) VALUES(:type,:tag,:message)");
+	 	/*$stmt=$this->db->prepare("INSERT INTO logs (type,tag,message) VALUES(:type,:tag,:message)");
+	 	
+	 	
 	 	$stmt->bindValue(":type",$type);
 	 	$stmt->bindValue(":tag",$tag);
 	 	$stmt->bindValue(":message",$message);
-	 	$stmt->execute();
+	 	
+	 	$stmt->execute();*/
 	 }
 	 	 /**
 	 * Returns the logs for the selected page number
@@ -1172,12 +1175,10 @@ class DAO {
 	}
 	function projectExists ($project_id){
 		$project= $this->getProject($project_id);
-		if (is_array($project)){
-			if (count($project)==1){
-				return true;
-			}
+		if ($project){
+			return "true";
 		}else {
-			return false;
+			return "false";
 		}
 	}
 }
