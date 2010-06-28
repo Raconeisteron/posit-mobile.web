@@ -472,7 +472,7 @@ class DAO {
 		$this->createLog("I","getProject"," $id");
 
 		$stmt = $this->db->prepare(
-			"select id, name, create_time, permission_type
+			"select id, name, create_time, permission_type, deleted
 			 from project where id = :id");
 		
 		$stmt->bindValue(":id", $id);	
@@ -1175,7 +1175,8 @@ class DAO {
 	}
 	function projectExists ($project_id){
 		$project= $this->getProject($project_id);
-		if ($project){
+//		var_dump($project);
+		if ($project["deleted"]==0){
 			return "true";
 		}else {
 			return "false";
