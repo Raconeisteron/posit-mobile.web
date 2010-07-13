@@ -1182,6 +1182,68 @@ class DAO {
 			return "false";
 		}
 	}
+	
+	/* Gets project name associated with project id
+	 * @param the project id
+	 * @return the project name
+	 */
+	function getProjectName ($project_id) {
+		$stmt = $this->db->prepare(
+			"SELECT name
+			FROM project
+			WHERE id = :project_id
+			");
+		$stmt->bindValue(":project_id", $project_id);
+		$stmt->execute();
+		$row=$stmt->fetch(PDO::FETCH_ASSOC);
+		return "".$row['name'];
+	}
+	
+	/* Gets the project description associated with project id
+	 * @param the project id
+	 * @return the project description
+	 */
+	function getProjectDescription ($project_id) {
+		$stmt = $this->db->prepare(
+			"SELECT description
+			FROM project
+			WHERE id = :project_id
+			");
+		$stmt->bindValue(":project_id", $project_id);
+		$stmt->execute();
+		$row=$stmt->fetch(PDO::FETCH_ASSOC);
+		return "".$row['description'];
+	}
+	
+	/* Exports project with given project id to .csv file
+	 * NOTE: date is modified to be easily parsed by Microsoft Excel
+	 * @param the project id
+	 * @return the string to be parsed as a .csv
+	 */
+	function exportProject ($project_id){
+		$project_name = $this->getProjectName($project_id);
+		$project_description = $this->getProjectDescription($project_id);
+		$stmt = $this->db->prepare(
+			"SELECT description, name, add_time, latitude, longitude
+			FROM find
+			WHERE project_id=:project_id			
+			AND deleted=0
+			");
+		$stmt->bindValue(":project_id", $project_id);
+		$stmt->execute();
+		$csvwriter = "";
+		$csvwriter = "Project Name: {$project_name},,,,\n";
+		$csvwriter .= "Project Description: {$project_description},,,,\n\n";
+		$csvwriter .= "NAME,DESCRIPTION,DATE ADDED,LATITUDE,LONGITUDE\n";
+		while ($row=$stmt->fetch(PDO::FETCH_ASSOC))
+			{
+			extract($row);
+			$new_time = convertDate(strtotime($add_time), "excel");
+			$csvwriter .= "$name,$description,$new_time,$latitude,$longitude";
+			}
+		return $csvwriter;
+	}
+		
 }
 
 ?>

@@ -3,7 +3,8 @@
 <div class="project_finds">
 <div id="secondary-menu">
 <a href="projects">All Projects</a>
-<a href="project.delete?id={$project.id}">Delete Project</a></p>
+<a href="project.delete?id={$project.id}">Delete Project</a>
+<a href="project.export?id={$project.id}">Export Project</a>
 </div>
 </div>
 	{foreach from=$finds item=find}
