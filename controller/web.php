@@ -107,7 +107,8 @@ function webController($path, $request) {
 				$smarty->display("projects.tpl");
 				break;
 			case 'expeditions':
-				$projectId = $request["project_id"];
+				$projectId = $request["id"];
+				var_dump ($projectId);
 				$expeditions = $dao->getExpeditions($projectId);
 				$smarty->assign("expeditions", $expeditions);
 				$smarty->display("expeditions.tpl");
@@ -235,7 +236,17 @@ function webController($path, $request) {
 				$smarty->assign("project", $project);
 				$smarty->assign("find", $find);
 				$smarty->display("find_display.tpl");
-				break;				
+				break;
+			case 'project.export':
+				$project_id = $request["id"];
+				$writer = $dao->exportProject($project_id);
+				header('Content-Type: text/csv');
+				header('Content-Disposition: attachment; filename="yourPositProject.csv"');
+				//$smarty->display("project_display.tpl");
+				echo $writer;
+				break;
+//			case 'projectlist.export':
+								
 			case 'settings':
 				$userId = $_SESSION["loginId"];
 				$devices = $dao->getDevicesByUser($userId);
