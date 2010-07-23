@@ -112,8 +112,93 @@ class DAO {
 		return $lastid;
 	 }
 	 
+	 
 	 /**
-	  * Creates an entry in the log table
+	  * Creates a new entry in the form database for using the title, userId and form data
+	  * @param $formData, $title, $userId
+	  */
+	 function newForm($title, $userId, $formData){
+	 	$query = sprintf("INSERT INTO forms (title, user_id, form) VALUES('%s', '%s', '%s')",
+	 	mysql_real_escape_string($title),
+	 	mysql_real_escape_string($userId),
+	 	mysql_real_escape_string($formData));
+	 	$stmt = $this->db->prepare($query);	 	
+	 	$stmt->execute();
+	 }
+
+	 /**
+	  * Updates the form that has the given title and user id using the form data.
+	  * @param $title
+	  * @param $userId
+	  * @param $formData
+	  */
+	 function updateForm($title, $userId, $formData){
+	 	$query = sprintf("UPDATE forms SET  form = '%s' WHERE user_id = '%s' and title = '%s'",
+	 	mysql_real_escape_string($formData),
+	 	mysql_real_escape_string($userId),
+	 	mysql_real_escape_string($title));
+	 	$stmt = $this->db->prepare($query);	 	
+	 	$stmt->execute();
+	 }	 
+	 /**
+	  * Returns form data associated with title and user id.
+	  * @param $userId
+	  * @param $title
+	  * @return Associative Array
+	  */
+	 function loadForm($userId, $title){
+	 	$query = sprintf("SELECT form FROM `forms` WHERE user_id = '%s' and title = '%s'", 
+	 	mysql_real_escape_string($userId),
+	 	mysql_real_escape_string($title));
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	$return = $stmt->fetch(PDO::FETCH_NUM);
+	 	return $return[0];
+	 }
+	 
+ /**
+	  * Returns all rows in the forms table associated with the user id
+	  * @param $userId
+	  * @return Associative Array
+	  */
+	 function listForms($userId){
+	 	$query = sprintf("SELECT title FROM forms where user_id='%s'", mysql_real_escape_string($userId));
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+	 }
+	 /**
+	  * Checks if the form name already exists for the user. Returns true if it does and false if it does not.
+	  * @param $title
+	  * @param $userId
+	  * @return Boolean
+	  */
+	 function checkFormName($title, $userId){
+	 	$query = sprintf("SELECT * FROM `forms` WHERE user_id = '%s' and title = '%s'", 
+	 	mysql_real_escape_string($userId),
+	 	mysql_real_escape_string($title));
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	$result=$stmt->fetch(PDO::FETCH_NUM);
+	 	if(!isset($result[0]))
+	 		return false;
+	 	return true; 
+	 }
+	 /**
+	  * Deletes the form associated with the title and user id.
+	  * @param $title
+	  * @param $userId
+	  * @return n/a
+	  */
+	 function deleteForm($title, $userId){
+	 	$query = sprintf("DELETE FROM `forms` WHERE title = '%s' and user_id = '%s'", 
+	 	mysql_real_escape_string($title),
+	 	mysql_real_escape_string($userId));
+	 }
+	 /**
+	  * Returns all rows in the forms table associated with the user id
+	  * @param $userId
+	  * @return Associative Array
 	  */
 	 function createLog($type,$tag,$message){
 	 	/*$stmt=$this->db->prepare("INSERT INTO logs (type,tag,message) VALUES(:type,:tag,:message)");
@@ -345,6 +430,7 @@ class DAO {
 		$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
 			latitude, longitude, revision from find where project_id = :projectId and deleted=0 order by add_time"
 		);	
+		
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);

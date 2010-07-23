@@ -33,8 +33,17 @@ function webController($path, $request) {
 		$smarty->assign("loginHasAdmin", $loginHasAdmin);
 		
 		switch($action) {
+			case 'formbuilder.iframe':
+				$smarty->display('build.tpl');
+				break;
+			case 'formbuilder':
+				$smarty->display('formbuilder.tpl');				
+				break;
 			case 'main':
 				$smarty->display('main.tpl');
+				break;
+			case 'build':
+				$smarty->display('build.tpl');
 				break;
 			case '404':
 				$smarty->display('404.tpl');
@@ -107,8 +116,7 @@ function webController($path, $request) {
 				$smarty->display("projects.tpl");
 				break;
 			case 'expeditions':
-				$projectId = $request["id"];
-				var_dump ($projectId);
+				$projectId = $request["project_id"];
 				$expeditions = $dao->getExpeditions($projectId);
 				$smarty->assign("expeditions", $expeditions);
 				$smarty->display("expeditions.tpl");
