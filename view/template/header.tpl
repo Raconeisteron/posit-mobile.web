@@ -60,6 +60,7 @@
 			</div> <!-- /loginStatus --></li>
 <li><a href="projects" title="Projects" {if $tab== "projects"}class="active"{/if} >Projects</a></li> 
 <li><a href="settings" title="Settings" {if $tab== "settings"}class="active"{/if}  >Settings</a></li> 
+<li><a href="formbuilder" title="Form Builder" {if $tab== "formbuilder"}class="active"{/if}  >Form Builder</a></li> 
 <!--<li><a href="maps" title="Maps" {if $tab== "maps"}class="active"{/if}>Maps</a></li>--> 
 {if $loginHasAdmin}
 <li><a href="admin" title="Administration"{if $tab== "admin"}class="active"{/if}>Administration</a></li> 
