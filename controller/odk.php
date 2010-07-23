@@ -11,15 +11,18 @@ function odkController($path, $request, $files = null) {
 	list($reqPath, $queryString) = explode('?', $path);
 	$pathParts = explode('/', substr($reqPath,1));
 	list($action) = $pathParts;
-	header("Content-Type: text/xml; charset=iso-8859-1");
+	
 	switch($action) {
 		case 'formList':
 			$forms = $dao->listAllForms();
+			header("Content-Type: text/xml; charset=iso-8859-1");
 			$smarty->assign("forms", $forms);
-			
 			$smarty->display('odk/formList.tpl');
-			
 			break;
+		case 'formXml':
+			header("Content-Type: text/xml; charset=iso-8859-1");
+			$id = $request["formId"];
+			echo $dao->loadFormXml($id);
 		default:
 			break;
 	}
