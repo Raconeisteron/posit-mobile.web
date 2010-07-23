@@ -167,6 +167,17 @@ class DAO {
 	 	$stmt->execute();
 	 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	 }
+	 /*
+	  * List all forms 
+	  * USE ONLY IN ODK --- DEMO PURPOSES ONLY -Prasanna
+	  */
+	 function listAllForms (){
+	 	$query = "SELECT id,title FROM forms";
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+	 }
+	 
 	 /**
 	  * Checks if the form name already exists for the user. Returns true if it does and false if it does not.
 	  * @param $title
