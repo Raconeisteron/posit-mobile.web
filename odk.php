@@ -16,7 +16,7 @@ while(isset($path[$i])) {
 	$i++;
 }
 
-odkController($p, $_REQUEST);
+odkController($p, $_REQUEST,$_FILES);
 
 
 ?>
