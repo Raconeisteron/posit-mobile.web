@@ -21,6 +21,7 @@ function ajaxController($path, $request) {
 				$userId = $_SESSION["loginId"];
 				$title = $data["title"];
 				$formData = $data["content"];
+				$xml = $request["xml"];
 				if(!validate_project_name($title)){
 					jsonError(TITLE_INVALID, "Your form's name is invalid.");
 				}
@@ -30,17 +31,18 @@ function ajaxController($path, $request) {
 				if($dao->checkFormName($title, $userId)){
 					jsonError(FORM_NAME_EXISTS, "You already have a form with the same name. Please choose another name.");
 				}
-				$dao->newForm($title, $userId, $formData);
+				$dao->newForm($title, $userId, $formData, $xml);
 				break;
 			case 'updateForm':
 				$data = $request["formData"];
 				$userId = $_SESSION["loginId"];
 				$title = $data["title"];
 				$formData = $data["content"];
+				$xml = $request["xml"];
 				if(count($data["content"])>10){
 					jsonError(FORM_OVERFLOW, "Your form is too large. 10 controls may be present in a form. You have ".count($data["content"]).".");
 				}
-				$dao->updateForm($title, $userId, $formData);
+				$dao->updateForm($title, $userId, $formData,$xml);
 				break;
 			case 'listForms':
 				$formList = json_encode($dao->listForms($_SESSION["loginId"]));

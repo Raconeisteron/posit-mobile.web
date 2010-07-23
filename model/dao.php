@@ -117,11 +117,16 @@ class DAO {
 	  * Creates a new entry in the form database for using the title, userId and form data
 	  * @param $formData, $title, $userId
 	  */
-	 function newForm($title, $userId, $formData){
-	 	$query = sprintf("INSERT INTO forms (title, user_id, form) VALUES('%s', '%s', '%s')",
+	 function newForm($title, $userId, $formData,$xml){
+	 	$query = sprintf("INSERT INTO forms (title, user_id, form, xml) VALUES('%s', '%s', '%s', '%s')",
 	 	mysql_real_escape_string($title),
 	 	mysql_real_escape_string($userId),
-	 	mysql_real_escape_string($formData));
+	 	mysql_real_escape_string($formData),
+	 	/*
+	 	 * this is because the colon used in the namespace identifier gets escaped by the command
+	 	 * using something like {colon} makes it all to obvious
+	 	 */
+	 	mysql_real_escape_string(str_replace(":", "{colon}",$xml))); 
 	 	$stmt = $this->db->prepare($query);	 	
 	 	$stmt->execute();
 	 }
@@ -132,14 +137,37 @@ class DAO {
 	  * @param $userId
 	  * @param $formData
 	  */
-	 function updateForm($title, $userId, $formData){
-	 	$query = sprintf("UPDATE forms SET  form = '%s' WHERE user_id = '%s' and title = '%s'",
+	 function updateForm($title, $userId, $formData, $xml){
+	 	$query = sprintf("UPDATE forms SET  form = '%s' WHERE user_id = '%s' and title = '%s' and xml = '%s'",
 	 	mysql_real_escape_string($formData),
 	 	mysql_real_escape_string($userId),
-	 	mysql_real_escape_string($title));
+	 	mysql_real_escape_string($title),
+	 	/*
+	 	 * this is because the colon used in the namespace identifier gets escaped by the command
+	 	 * using something like {colon} makes it all to obvious
+	 	 */
+	 	mysql_real_escape_string(str_replace(":", "{colon}",$xml)));
 	 	$stmt = $this->db->prepare($query);	 	
 	 	$stmt->execute();
-	 }	 
+	 }
+
+	 /**
+	  * Returns form xml data associated with form id.
+	  * @param $formId
+	  * @return Associative Array
+	  */
+	 function loadFormXml($id){
+	 	$query = sprintf("SELECT xml FROM `forms` WHERE id = '%s'", 
+	 	mysql_real_escape_string($id));
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	$return = $stmt->fetch(PDO::FETCH_NUM);
+	 	/*
+	 	 * replace back the colon character that was escaped before
+	 	 */
+	 	return str_replace( "{colon}", ":",$return[0]);
+	 }
+	 
 	 /**
 	  * Returns form data associated with title and user id.
 	  * @param $userId

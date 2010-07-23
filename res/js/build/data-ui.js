@@ -54,12 +54,15 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
                 $('.saveAsDialog').jqmShow();
                 return;
             }
-
+//            alert(odkmaker.data.serialize());
             $.ajax({
                 url: '../ajax/updateForm',
                 dataType: 'json',
                 type: 'POST',
-                data: {formData: {title: odkmaker.data.currentFormName, content: JSON.stringify(odkmaker.data.extract().controls)}},
+                data: {formData: 
+                	{title: odkmaker.data.currentFormName, 
+            		content: JSON.stringify(odkmaker.data.extract().controls)},
+            		xml: odkmaker.data.serialize()},
                 success: function(response, status)
                 {
                 	if(response!=null){
@@ -98,6 +101,7 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
         $('.saveAsDialog .saveAsLink').click(function(event)
         {
             event.preventDefault();
+//            alert(odkmaker.data.serialize());
             var title_form = $('.saveAsDialog #saveAs_name').val();
             if (title_form === '')
                 return false;
@@ -106,7 +110,8 @@ var dataNS = odkmaker.namespace.load('odkmaker.data');
                 url: '../ajax/submitForm',
                 dataType: 'json',
                 type: 'POST',
-                data: {formData: {title: title_form, content: JSON.stringify(odkmaker.data.extract().controls)}},
+                data: {formData: {title: title_form, content: JSON.stringify(odkmaker.data.extract().controls)}, 
+            			xml: odkmaker.data.serialize()},
                 success: function(response, status)
                 {
                 	if(response!=null){
