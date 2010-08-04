@@ -112,6 +112,20 @@ class DAO {
 		return $lastid;
 	 }
 	 
+	/**
+	 * Renames expedition and returns a boolean based on the success of the query
+	 * @param $expId
+	 * @param $new
+	 * @return Boolean Successs
+	 */
+	function renameExpedition($expId, $newName){
+		$query = sprintf("UPDATE expedition SET name='%s' where id='%s'",
+		mysql_real_escape_string($newName),
+		mysql_real_escape_string($expId));
+		$stmt = $this->db->prepare($query);
+		$stmt->execute();
+		
+	}
 	 
 	 /**
 	  * Creates a new entry in the form database for using the title, userId and form data
@@ -463,13 +477,19 @@ class DAO {
 	 * get all the finds for a project
 	 * @param unknown_type $projectId
 	 */
-	function getFinds($projectId) {
+	function getFinds($projectId, $lastTime = null) {
 		Log::getInstance()->log("getFinds: $projectId");
-
-		$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
-			latitude, longitude, revision from find where project_id = :projectId and deleted=0 order by add_time"
+		if($lastTime != null){
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+			latitude, longitude, revision from find where add_time > :lastTime
+			 and project_id = :projectId and deleted=0 order by add_time"
 		);	
-		
+		$stmt->bindValue(":lastTime", $lastTime);
+		}else{
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+				latitude, longitude, revision from find where project_id = :projectId and deleted=0 order by add_time"
+			);	
+		}
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -726,7 +746,13 @@ class DAO {
 		$lastid = $this->db->lastInsertId();
 		Log::getInstance()->log("Updated find_history, lastInsertId()=$lastid");
 	}
-	/*
+	*/
+	
+/**
+ * Creates a new expedition associated with the projectId.
+ * @param $projectId
+ * @return unknown_type
+ */
 	
 	function addExpedition($projectId){
 		$stmt = $this->db->prepare("INSERT INTO expedition ( project_id ) VALUES (:projectId)");
@@ -735,6 +761,16 @@ class DAO {
 		$stmt->execute();
 		return $this->db->lastInsertId();
 	}
+	
+	/**
+	 * Adds the expedion point data and associates it with the provided expedition id
+	 * @param $expeditionId
+	 * @param $latitude
+	 * @param $longitude
+	 * @param $altitude
+	 * @param $swath
+	 * @return unknown_type
+	 */
 	
 	function addExpeditionPoint($expeditionId, $latitude, $longitude, $altitude, $swath){
 		$stmt = $this->db->prepare("INSERT INTO gps_sample ( expedition_id, latitude, longitude , altitude, swath, sample_time)" 
@@ -750,6 +786,7 @@ class DAO {
 	}
 	
 	function getExpeditions($projectId){
+		
 		$this->createLog("I","getExpeditions"," $projectId");
 		$stmt = $this->db->prepare("SELECT id, name, description, project_id FROM expedition WHERE project_id= :projectId ");
 		$stmt->bindValue(":projectId", $projectId);
@@ -757,13 +794,145 @@ class DAO {
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		return $temp;
 	}
+	/**
+	 * Returns the most recent time associated with the expedition id from the gps_sample table.
+	 * @param $expId
+	 * @return $lastUpdate
+	 */
+	function getLastUpdate($expId){
+		$query =  sprintf("SELECT MAX(sample_time) FROM gps_sample where expedition_id = %s",
+		$expId);
+		$stmt = $this->db->prepare($query);
+		$stmt->execute();
+		$lastUpdate = $stmt->fetch();
+		return $lastUpdate[0];
+	}
 	
+	function getLastFindTime($projId){
+		$query =  sprintf("SELECT MAX(add_time) FROM find where project_id = %s",
+		$projId);
+		$stmt = $this->db->prepare($query);
+		$stmt->execute();
+		$lastUpdate = $stmt->fetch();
+		return $lastUpdate[0];
+	}
+	/**
+	 * Returns all points in an expedition beyond the specified time
+	 * @param $expId
+	 * @param $expTime
+	 * @return unknown_type
+	 */
+	
+	function getNewPoints($expId, $expTime){
+		$query = sprintf("SELECT DISTINCT latitude, longitude, altitude, expedition_id 
+		FROM `gps_sample` WHERE expedition_id = '%s' and sample_time > '%s'",
+		$expId,
+		$expTime);
+		$stmt = $this->db->prepare($query);
+		$stmt->execute();
+		$newPoints = $stmt->fetchAll();
+		return $newPoints;
+	}
+	
+	/**
+	 * Returns an associated array with the points that have the provided expedition id.
+	 * @param $expeditionId
+	 * @return unknown_type
+	 */
 	function getExpeditionPoints($expeditionId){
-		$stmt = $this->db->prepare("SELECT latitude, longitude, altitude, expedition_id FROM gps_sample WHERE expedition_id= :expeditionId ");
+		$stmt = $this->db->prepare("
+		SELECT DISTINCT
+			latitude, longitude
+		FROM gps_sample
+		WHERE expedition_id= :expeditionId
+		"
+		);
 		$stmt->bindValue(":expeditionId", $expeditionId);
 		$stmt->execute();
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		return $temp;
+	}
+	
+	/*
+	 * Checks an array to prevent against SQL-injection.
+	 * Then implodes the array using a comma as a delimter.
+	 * @param $arrayOfInt an array
+	 * @return $result a string containing each entry of $arrayOfInt
+	 * 		casted to (int) and imploded using a comma as a delimiter  
+	 */
+	function checkAndImplode($arrayOfInt) {
+		$result = "";
+		foreach ($arrayOfInt as $entry) {
+			$entry = (int) $entry;
+			$result .= $entry . ",";
+		}
+		$result = rtrim($result, ",");
+		return $result;
+	}
+	
+	/* finds northernmost, southernmost, easternmost, and westernmost extremes
+	 * among gps_samples from an array of expedition id's
+	 * @param $expeditionIds an array of expedition id's
+	 * @return an array containing the extremes in the order north-south-east-west
+	 */
+	function getExpExtremes($expeditions) {
+		$id_array = array();
+		foreach ($expeditions as $exp) {
+			$id_array[] = $exp['id'];
+		}
+		$expeditionIdString = $this->checkAndImplode($id_array); 
+		$stmt = $this->db->prepare ("
+		SELECT max(latitude) north, min(latitude) south, max(longitude) east, min(longitude) west, count(*) num_rows 
+		FROM gps_sample
+		WHERE expedition_id
+		IN ($expeditionIdString)
+		");
+		$stmt->execute();
+		$row=$stmt->fetch(PDO::FETCH_ASSOC);
+		extract($row);
+		return array('north' => $north,'south' => $south,'east' => $east,'west' => $west);
+	}
+	
+	/* finds northernmost, southernmost, easternmost, and westernmost extremes
+	 * among the finds associated with a given project
+	 * @param $projectId the id of the project of interest
+	 * @return an array containing the extremes in the order north-south-east-west
+	 */
+	function getFindExtremes($projectId) {
+		$stmt = $this->db->prepare ("
+		SELECT max(latitude) north, min(latitude) south, max(longitude) east, min(longitude) west
+		FROM find
+		WHERE project_id=$projectId
+		");
+		$stmt->execute();
+		$row=$stmt->fetch(PDO::FETCH_ASSOC);
+		extract($row);
+		return array('north' => $north,'south' => $south,'east' => $east, 'west'=>$west);
+	}
+	
+	function getDualExtremes($exp_extremes,$find_extremes) {
+		extract($exp_extremes);
+		extract($find_extremes);
+		$north = max(array($exp_extremes['north'],$find_extremes['north']));
+		$south = min(array($exp_extremes['south'],$find_extremes['south']));
+		$east = max(array($exp_extremes['east'],$find_extremes['east']));
+		$west = min(array($exp_extremes['west'],$find_extremes['west']));
+		return array('north' => $north,'south' => $south,'east' => $east, 'west'=>$west);
+	}
+	
+
+	/*
+	 * finds center of gps_samples from an array of extremes labeled north, south, east, and west as in the above two functions
+	 * those functions are getExpExtremes (for expeditions) and getFindExtremes (for finds)
+	 * @param $extremes an array of extremes
+	 * @return $result an array of doubles the geographic center
+	 */
+	function getGeocenter($extremes) {
+		extract($extremes);
+		$lat = ($north+$south)/2.0;
+		$long = ($east+$west)/2.0;
+		$result = array('lat'=>$lat,'long'=>$long);
+		return $result;
 	}
 	
 	
@@ -1364,9 +1533,28 @@ class DAO {
 			{
 			extract($row);
 			$new_time = convertDate(strtotime($add_time), "excel");
-			$csvwriter .= "$name,$description,$new_time,$latitude,$longitude";
+			// removes commas to allow for correct delimiting
+			$new_description = str_replace(",","",$description);
+			$csvwriter .= "$name,$new_description,$new_time,$latitude,$longitude";
+			$csvwriter .= "\n";
 			}
 		return $csvwriter;
+	}
+	
+	/*
+	 * replaces spaces in a string with underscores
+	 * @param the id of the project whose name should be fixed
+	 * @param the new string without spaces
+	 */
+	function formatProjectName($project_id) {
+		$project_name = $this->getProjectName($project_id);
+		$arr_name = explode(" ",$project_name);
+		$new_name = "";
+		foreach ($arr_name as $word) {
+			$new_name .= $word . "_";
+		}
+		$new_name = rtrim($new_name, "_");
+		return $new_name;
 	}
 		
 }
