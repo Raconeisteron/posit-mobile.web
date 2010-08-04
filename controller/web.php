@@ -209,15 +209,95 @@ function webController($path, $request) {
 				$dao->deleteFind($find_id);
 				header("Location: ".$location);
 				//THIS LINE WILL PROBABLY NEED TO BE CHNANGED TO SPECIFY THE PROJECT ID...
-			case 'project.mapdisplay':
-				list($queryType, $queryValue) = explode("=", $queryString);
-				$id = $queryValue;
-				$project = $dao->getProject($id);
-				$smarty->assign("project", $project);
-				
-				$finds = $dao->getFinds($id);
-				$smarty->assign("finds", addslashes(json_encode($finds)));
-				$smarty->display("project_mapdisplay.tpl");
+			case 'project.showMap':
+				$project_id = $request["id"];
+				$project = $dao->getProject($project_id);
+				$smarty->assign("project",$project);
+				$finds = $dao->getFinds($project_id);
+				$expeditions = $dao->getExpeditions($project_id);
+				$expedition_points = array();
+				$expeditionKeys = array();
+			
+				//print_r($expeditions);
+				foreach($expeditions as $k=>$expedition){
+					$temp_points = $dao->getExpeditionPoints($expedition['id']);
+					if (count($temp_points) > 1) {
+						
+						$expedition_points[$k] = $temp_points;
+						$expeditionKeys[$k] = $expedition['id']; 
+					}
+					else{
+						unset($expeditions[$k]);
+
+					}
+					/*	echo "ACCEPTING expedition {$expedition['id']}:\n";
+						print_r($temp_points);
+						echo "\n\n"; 
+					} else {
+						
+						echo "REJECTING expedition {$expedition['id']}:\n";
+						print_r($temp_points);
+						echo "\n\n"; */ 
+					
+				}
+		//		print_r($expeditions);
+				if(count($expeditions)==0 && count($finds)!= 0){
+
+					$smarty->assign("expCheck", 0);
+					$smarty->assign("findCheck", 1);
+					$smarty->assign("finds", addslashes(json_encode($finds)));
+					$smarty->assign("expeds", json_encode($expeditionKeys));
+					$smarty->assign("expeditions", $expeditions);
+					$smarty->assign("expedition_points",json_encode($expedition_points));
+					$smarty->assign("expedition_points_decode",$expedition_points);
+					$extremes = $dao->getFindExtremes($project_id);
+					$smarty->assign('extremes',$extremes);
+					$geocenter = $dao->getGeocenter($extremes);
+					$smarty->assign('geocenter',$geocenter);
+					$colors = array("ff0000","ff8800","ffff00","99ff00","00ff00","337766","0000ff","9955ff","6600bb","ff0088");
+					$smarty->assign('colors',json_encode($colors));
+					$smarty->assign('colors_decode',$colors);
+					$smarty->display("project_dualdisplay_test.tpl");					
+				}
+				if(count($finds)==0 && count($expeditions)!= 0){
+					$smarty->assign("expCheck", 1);
+					$smarty->assign("findCheck", 0);
+					$smarty->assign("finds", addslashes(json_encode($finds)));
+					$smarty->assign("expeds", json_encode($expeditionKeys));
+					$smarty->assign("expeditions", $expeditions);
+					$smarty->assign("expedition_points",json_encode($expedition_points));
+					$smarty->assign("expedition_points_decode",$expedition_points);
+					$extremes = $dao->getExpExtremes($expeditions);
+					$smarty->assign('extremes',$extremes);
+					$geocenter = $dao->getGeocenter($extremes);
+					$smarty->assign('geocenter',$geocenter);
+					$colors = array("ff0000","ff8800","ffff00","99ff00","00ff00","337766","0000ff","9955ff","6600bb","ff0088");
+					$smarty->assign('colors',json_encode($colors));
+					$smarty->assign('colors_decode',$colors);
+					$smarty->display("project_dualdisplay_test.tpl");		
+				}
+				if(count($finds)== 0 && count($expeditions)== 0){
+					$smarty->display("empty_project.tpl");
+				}
+				if(count($finds)!= 0 && count($expeditions)!= 0){
+					$smarty->assign("expCheck", 1);
+					$smarty->assign("findCheck", 1);
+					$smarty->assign("finds", addslashes(json_encode($finds)));
+					$smarty->assign("expeds", json_encode($expeditionKeys));
+					$smarty->assign("expeditions", $expeditions);
+					$smarty->assign("expedition_points",json_encode($expedition_points));
+					$smarty->assign("expedition_points_decode",$expedition_points);
+					$find_extremes = $dao->getFindExtremes($project_id);
+					$exp_extremes = $dao->getExpExtremes($expeditions);
+					$extremes = $dao->getDualExtremes($exp_extremes,$find_extremes);
+					$smarty->assign('extremes',$extremes);
+					$geocenter = $dao->getGeocenter($extremes);
+					$smarty->assign('geocenter',$geocenter);
+					$colors = array("ff0000","ff8800","ffff00","99ff00","00ff00","337766","0000ff","9955ff","6600bb","ff0088");
+					$smarty->assign('colors',json_encode($colors));
+					$smarty->assign('colors_decode',$colors);
+					$smarty->display("project_dualdisplay_test.tpl");
+				}
 				break;
 			case 'project.display':
 				list($queryType, $queryValue) = explode("=", $queryString);
@@ -247,14 +327,14 @@ function webController($path, $request) {
 				break;
 			case 'project.export':
 				$project_id = $request["id"];
+				$project_name = $dao->formatProjectName($project_id);
+				$filename = $project_name . ".csv";
 				$writer = $dao->exportProject($project_id);
 				header('Content-Type: text/csv');
-				header('Content-Disposition: attachment; filename="yourPositProject.csv"');
-				//$smarty->display("project_display.tpl");
+				header("Content-Disposition: attachment; filename=$filename");
 				echo $writer;
 				break;
-//			case 'projectlist.export':
-								
+		
 			case 'settings':
 				$userId = $_SESSION["loginId"];
 				$devices = $dao->getDevicesByUser($userId);

@@ -59,6 +59,49 @@ function ajaxController($path, $request) {
 			case 'username':
 				echo $_SESSION["loginEmail"];
 				break;
+			case 'renameExpedition':
+				$data = $request["expData"];
+				$expId = $data["expId"];
+				$newName = $data["name"];
+				if(!validate_project_name($newName)){
+					jsonError(TITLE_INVALID, "Your expedition's name is invalid.");
+				}
+				$dao->renameExpedition($expId, $newName);
+				break;
+			case 'getFindTimeStamps':
+				$data = $request["projectData"];
+				$projectId = $data["projId"];
+				$lastUpdate = $dao->getLastFindTime($projectId);
+				echo $lastUpdate;
+				break;
+			case 'updateFinds':
+				$data = $request["projectData"];
+				$projectId = $data["projId"];
+				$projectTime = $data["projTime"];
+				$newFinds = $dao->getFinds($projectId, $projectTime);
+				if(count($newFinds)>=1){
+					echo json_encode($newFinds);
+				}
+				break;
+			case 'getTimeStamps':
+				$data = $request["expData"];
+				$expId = $data["expId"];
+				if($data["expId"] != ""){
+					$lastUpdate = $dao->getLastUpdate($expId);
+					echo $lastUpdate;
+				}
+				break;
+			case 'updateTracks':
+				$data = $request["expData"];
+				$expId = $data["expId"];
+				$expTime = $data["expTime"];
+				if($expId != ""){
+					$newPoints = $dao-> getNewPoints($expId, $expTime);
+					if(count($newPoints)>=1){
+						echo json_encode($newPoints);
+					}
+				}
+				break;
 			default:
 				header("Location: main");
 		}

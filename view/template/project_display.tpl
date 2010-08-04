@@ -5,6 +5,7 @@
 <a href="projects">All Projects</a>
 <a href="project.delete?id={$project.id}">Delete Project</a>
 <a href="project.export?id={$project.id}">Export Project</a>
+<a href="project.showMap?id={$project.id}">Map of Finds and Expeditions</a>
 </div>
 </div>
 	{foreach from=$finds item=find}

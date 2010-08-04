@@ -41,6 +41,7 @@ function odkController($path, $request, $files = null) {
 			if (move_uploaded_file($files["xml_submission_file"]["tmp_name"], $target_path)){
 //				header("HTTP/1.1 200 OK");
 				header ("Location: ". SERVER_BASE_URI."/odk",true, 201);
+				
 				echo "upload successful ". $file_name;
 				
 			}
@@ -49,6 +50,11 @@ function odkController($path, $request, $files = null) {
 			}
 						
 			break;
+		case 'parse':
+			$url = "http://turing.cs.trincoll.edu/~pgautam/positweb/uploads/woo_2010-07-24_09-10-16.xml";
+			
+			break;
+			
 		default:
 			break;
 	}
