@@ -772,14 +772,16 @@ class DAO {
 	 * @return unknown_type
 	 */
 	
-	function addExpeditionPoint($expeditionId, $latitude, $longitude, $altitude, $swath){
-		$stmt = $this->db->prepare("INSERT INTO gps_sample ( expedition_id, latitude, longitude , altitude, swath, sample_time)" 
-		."VALUES (:expeditionId, :latitude, :longitude, :altitude, :swath, now() )");
+	function addExpeditionPoint($expeditionId, $latitude, $longitude, $altitude, $swath, $time){
+		$stmt = $this->db->prepare("INSERT INTO gps_sample ( expedition_id, latitude, longitude , altitude, swath, time, sample_time)" 
+//		."VALUES (:expeditionId, :latitude, :longitude, :altitude, :swath, now() )");
+		."VALUES (:expeditionId, :latitude, :longitude, :altitude, :swath, :time, now() )");
 		$stmt->bindValue(":expeditionId", $expeditionId);
 		$stmt->bindValue(":latitude", $latitude);
 		$stmt->bindValue(":longitude", $longitude);
 		$stmt->bindValue(":altitude", $altitude);
 		$stmt->bindValue(":swath", $swath);
+		$stmt->bindValue(":time", $time);
 		$stmt->execute();
 		return $this->db->lastInsertId();
 		//return $stmt->execute() > 0;
@@ -845,6 +847,7 @@ class DAO {
 			latitude, longitude
 		FROM gps_sample
 		WHERE expedition_id= :expeditionId
+                ORDER BY time
 		"
 		);
 		$stmt->bindValue(":expeditionId", $expeditionId);

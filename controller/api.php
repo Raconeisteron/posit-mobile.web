@@ -13,6 +13,9 @@ function apiController($path, $request, $files = null) {
 	$pathParts = explode('/', substr($reqPath,1));
 	list($action) = $pathParts;
 	
+	Log::getInstance()->log("Reached server");
+	Log::getInstance()->log("$path , $request");
+
 	if ($action != "addExpeditionPoint" && $action != "getDeviceByAuthKey") {
 		$log = Log::getInstance();
 		$log->log("$action");
@@ -129,8 +132,11 @@ function apiController($path, $request, $files = null) {
 
 		case 'addExpeditionPoint':
 			echo $request["expeditionId"].",";
-			echo $dao->addExpeditionPoint($request["expeditionId"],$request["lat"],
-			$request["lng"], $request["alt"], $request["swath"]);
+			echo $dao->addExpeditionPoint($request["expedition"],$request["latitude"],
+				$request["longitude"], $request["altitude"], $request["swath"], $request["time"]);
+//			echo $dao->addExpeditionPoint($request["expeditionId"],$request["lat"],
+//				$request["lng"], $request["alt"], $request["swath"], $request["time"]);
+//			$request["lng"], $request["alt"], $request["swath"]);
 			break;
 
 

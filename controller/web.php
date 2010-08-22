@@ -5,7 +5,10 @@ function webController($path, $request) {
 	list($reqPath, $queryString) = explode('?', $path);
 	$pathParts = explode('/', substr($reqPath,1));
 	list($action) = $pathParts;
-	
+
+	Log::getInstance()->log("Reached server");
+	Log::getInstance()->log("$path , $request");
+
 	session_start();
 	$authnStatus = checkAuthn(); 
 	
