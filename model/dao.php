@@ -100,12 +100,13 @@ class DAO {
 	 * records a record in the sync_history table
 	 * @param unknown_type $imei
 	 */
-	 function recordSync($imei) {
-	 	$this->createLog("I","recordSync","Imei:".$imei);
+	 function recordSync($imei, $authKey) {
+	 	$this->createLog("I","recordSync","Imei:".$imei, "Authkey:".$authKey);
 		$stmt = $this->db->prepare(
-			"INSERT INTO sync_history (imei) VALUES (:imei)"
+			"INSERT INTO sync_history (imei, auth_key) VALUES (:imei,:authkey)"
 		); 
 		$stmt->bindValue(":imei", $imei);
+		$stmt->bindValue(":authkey", $authKey);
 		$stmt->execute();
 		$lastid = $this->db->lastInsertId();
 		$this->createLog("I","lastInsertId","Last id = ".$lastid);
@@ -540,8 +541,6 @@ class DAO {
 	function getFind($guid) {
 		Log::getInstance()->log("getFind: $guid");
 
-//		$stmt = $this->db->prepare("select id, project_id, guid, name, description, add_time, modify_time, 
-//			latitude, longitude, revision from find where id = :id");
 		$stmt = $this->db->prepare("select project_id, guid, name, description, add_time, modify_time, 
 			latitude, longitude, revision from find where guid = :guid");		
 		$stmt->bindValue(":guid", $guid);
@@ -574,9 +573,7 @@ class DAO {
 
 		$result[0]["images"] = array();
 		
-//		$stmt = $this->db->prepare("select id from photo where find_id = :id");
-//		$stmt->bindValue(":id", $id);
-		$stmt = $this->db->prepare("select id from photo where guid = :id");
+//		$stmt = $this->db->prepare("select id from photo where guid = :id");
 		$stmt->bindValue(":id", $guid);
 		$stmt->execute();
 		$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -757,7 +754,6 @@ class DAO {
 	function addExpedition($projectId){
 		$stmt = $this->db->prepare("INSERT INTO expedition ( project_id ) VALUES (:projectId)");
 		$stmt->bindValue(":projectId", $projectId);
-//		$stmt->bindValue(":userId", $userid);
 		$stmt->execute();
 		return $this->db->lastInsertId();
 	}
@@ -774,7 +770,6 @@ class DAO {
 	
 	function addExpeditionPoint($expeditionId, $latitude, $longitude, $altitude, $swath, $time){
 		$stmt = $this->db->prepare("INSERT INTO gps_sample ( expedition_id, latitude, longitude , altitude, swath, time, sample_time)" 
-//		."VALUES (:expeditionId, :latitude, :longitude, :altitude, :swath, now() )");
 		."VALUES (:expeditionId, :latitude, :longitude, :altitude, :swath, :time, now() )");
 		$stmt->bindValue(":expeditionId", $expeditionId);
 		$stmt->bindValue(":latitude", $latitude);
@@ -1098,15 +1093,12 @@ class DAO {
 	 * @param unknown_type $dataFull
 	 * @param unknown_type $dataThumb
 	 */
-	 // $request["imei"], $request["guid"], $request["identifier"], $request["project_id"], 
-	//		    $request["mime_type"], $request["timestamp"], $imagedata, $imagethumbdata);
-
-	function addPictureToFind($imei, $guid, $identifier, $project_id,  $mime_type, $timestamp, $dataFull, $dataThumb) {
+	function addPictureToFind($imei, $guid, $identifier, $project_id,  $mime_type, $timestamp, $dataFull, $dataThumb, $authKey) {
 		$this->createLog("I","addPictureToFind"," $imei, $guid, $identifier, $mimeType");
 
 		$stmt = $this->db->prepare(
-			"insert into photo (imei, guid, identifier, project_id,  mime_type, timestamp, data_full, data_thumb)
-			           VALUES (:imei, :guid, :identifier, :project_id, :mime_type, :timestamp, :dataFull, :dataThumb)"
+			"insert into photo (imei, guid, identifier, project_id,  mime_type, timestamp, data_full, data_thumb, auth_key)
+			           VALUES (:imei, :guid, :identifier, :project_id, :mime_type, :timestamp, :dataFull, :dataThumb, :authKey)"
 		);
 		$stmt->bindValue(":imei",$imei);
 		$stmt->bindValue(":guid",$guid);
@@ -1116,6 +1108,7 @@ class DAO {
 		$stmt->bindValue(":timestamp",$timestamp);
 		$stmt->bindValue(":dataFull",$dataFull);
 		$stmt->bindValue(":dataThumb",$dataThumb);
+		$stmt->bindValue(":authKey",$authKey);
 		$stmt->execute();
 		$this->createLog("I","addPictureToFind"," $imei, $guid, $identifier, $mimeType");
 		

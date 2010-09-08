@@ -110,11 +110,10 @@ function apiController($path, $request, $files = null) {
 
 			break;
 		case 'getDeltaFindsIds':
-			//			echo $dao->getDeltaFindsIds($deviceIdentifier);
 			echo $dao->getDeltaFindsIds($authKey, $request["projectId"]);
 			break;
 		case 'recordSync':
-			echo $dao->recordSync($deviceIdentifier);
+			echo $dao->recordSync($deviceIdentifier, $authKey);
 			break;
 		case 'registerDevice':
 			$imei = $request["imei"];
@@ -134,10 +133,6 @@ function apiController($path, $request, $files = null) {
 			echo $request["expedition"].",";
 			echo $dao->addExpeditionPoint($request["expedition"],$request["latitude"],
 				$request["longitude"], $request["altitude"], $request["swath"], $request["time"]);
-//
-//			echo $dao->addExpeditionPoint($request["expeditionId"],$request["lat"],
-//				$request["lng"], $request["alt"], $request["swath"], $request["time"]);
-//			$request["lng"], $request["alt"], $request["swath"]);
 			break;
 
 
@@ -202,7 +197,7 @@ function apiController($path, $request, $files = null) {
 			$imagethumbdata=base64_decode($request["data_thumbnail"]);
 
 			$result=$dao->addPictureToFind($request["imei"], $request["guid"], $request["identifier"], $request["project_id"],
-			$request["mime_type"], $request["timestamp"], $imagedata, $imagethumbdata);
+			$request["mime_type"], $request["timestamp"], $imagedata, $imagethumbdata, $authKey);
 			echo json_encode($result);
 			break;
 
