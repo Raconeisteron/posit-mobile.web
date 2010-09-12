@@ -1,3 +1,5 @@
 syntax:glob
+*~
+logs/*
 cache/compile
 uploads/*

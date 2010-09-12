@@ -66,20 +66,18 @@ class DAO {
 		$time = $result[0];
 		Log::getInstance()->log("getDeltaFindsIds: Max Time = |$time|");
                 
-                //  If there is no MAX time, this is a new device, so get all Finds from other phones
+                //  If there is no MAX time, this is a new device, so get all Finds -- i.e. some may have been
+                //   input from other phones
 
-//		if (strcmp($time,"") == 0) {
 		if ($time == NULL) {
 			Log::getInstance()->log("getDeltaFindsIds: IF time = $time");	
-//		        $res = mysql_query("SELECT DISTINCT find_guid FROM find_history WHERE imei != '$imei'") or die(mysql_error());  
 		        $res = mysql_query(
-			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE find_history.auth_key != '$auth_key' AND find.guid=find_history.find_guid AND find.project_id = '$pid'") 
+			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE find_history.auth_key != '$auth_key' AND find.guid=find_history.find_guid AND find.project_id = '$pid' AND find.deleted=0" ) 
 			or die(mysql_error());  
                 } else {
 			Log::getInstance()->log("getDeltaFindsIds: ELSE time = $time");	
-//       		        $res = mysql_query("SELECT DISTINCT find_guid FROM find_history WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0") or die(mysql_error());  
        		        $res = mysql_query(
-			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0 AND find.guid=find_history.find_guid AND find.project_id = '$pid'") 
+			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0 AND find.guid=find_history.find_guid AND find.project_id = '$pid' AND find.deleted=0") 
 			or die(mysql_error());  
                 }
 
@@ -479,7 +477,7 @@ class DAO {
 	 * @param unknown_type $projectId
 	 */
 	function getFinds($projectId, $lastTime = null) {
-		Log::getInstance()->log("getFinds: $projectId");
+		Log::getInstance()->log("getFinds, projectId = $projectId");
 		if($lastTime != null){
 			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
 			latitude, longitude, revision from find where add_time > :lastTime
@@ -539,7 +537,7 @@ class DAO {
 	 * @param unknown_type $id
 	 */
 	function getFind($guid) {
-		Log::getInstance()->log("getFind: $guid");
+		Log::getInstance()->log("getFind: guid = $guid");
 
 		$stmt = $this->db->prepare("select project_id, guid, name, description, add_time, modify_time, 
 			latitude, longitude, revision from find where guid = :guid");		
@@ -573,7 +571,7 @@ class DAO {
 
 		$result[0]["images"] = array();
 		
-//		$stmt = $this->db->prepare("select id from photo where guid = :id");
+		$stmt = $this->db->prepare("select id from photo where guid = :id");
 		$stmt->bindValue(":id", $guid);
 		$stmt->execute();
 		$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
