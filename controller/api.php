@@ -13,7 +13,7 @@ function apiController($path, $request, $files = null) {
 	$pathParts = explode('/', substr($reqPath,1));
 	list($action) = $pathParts;
 	
-	Log::getInstance()->log("Reached server");
+//	Log::getInstance()->log("Reached server");
 	Log::getInstance()->log("$path , $request");
 
 	if ($action != "addExpeditionPoint" && $action != "getDeviceByAuthKey") {
