@@ -1013,12 +1013,15 @@ class DAO {
 	 */
 	function createFind($auth_key, $imei, $guId, $projectId, $name, $description, $latitude, $longitude, $revision) {
 		Log::getInstance()->log("createFind: $guId, $projectId, $name, $description, $latitude, $longitude, $revision");
-		$stmt = $this->db->prepare(
-			"insert into find (imei, guid, project_id, name, description, 
-			latitude, longitude, add_time, modify_time, revision,auth_key) VALUES
-			(:imei, :guid, :projectId, :name, :description, :latitude, :longitude ,now(), now(), :revision, :auth_key)"
-		);
-		
+
+                // Note use of 'on duplicate key update'
+                $stmt = $this->db->prepare(
+                        "insert into find (imei, guid, project_id, name, description,
+                        latitude, longitude, add_time, modify_time, revision,auth_key) VALUES
+                        (:imei, :guid, :projectId, :name, :description, :latitude, :longitude ,now(), now(), :revision, :auth_key)
+                        on duplicate key update name = :name, description = :description, modify_time = now(), revision = :revision"
+                );
+
 		$stmt->bindValue(":imei", $imei);
 		$stmt->bindValue(":guid", $guId);
 		$stmt->bindValue(":projectId", $projectId);
