@@ -209,6 +209,7 @@ CREATE TABLE IF NOT EXISTS `sync_history` (
   `time` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
   `imei` varchar(50) NOT NULL,
   `auth_key` varchar(64) NOT NULL,
+  `project_id` int(11) NOT NULL default '-1',
   PRIMARY KEY  (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=402 ;
 
