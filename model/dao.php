@@ -533,6 +533,132 @@ class DAO {
 		return $result;
 	}
 	/**
+	 * get all the finds for a project that meet the search criteria for the project name
+	 * @param unknown_type $projectId
+	 */
+	function searchForFinds($projectId, $searchFor, $lastTime = null) {
+		Log::getInstance()->log("getFinds, projectId = $projectId");
+		if($lastTime != null){
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+			latitude, longitude, revision from find where add_time > :lastTime
+			 and project_id = :projectId and name like :searchFor and deleted=0 order by add_time"
+		);	
+		$stmt->bindValue(":lastTime", $lastTime);
+		}else{
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+				latitude, longitude, revision from find where project_id = :projectId and name like :searchFor and deleted=0 order by add_time"
+			);	
+		}
+		$stmt->bindValue(":projectId", $projectId);
+		$stmt->bindValue(":searchFor", "%" . $searchFor . "%");
+/**		$stmt->bindValue(":searchFor", "%e%");*/
+		$stmt->execute();
+		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$result = array();
+		
+		foreach ($temp as $find) {
+			$stmt =  $this->db->prepare("select id from photo where guid = :id");
+			$stmt->bindValue(":id", $find["guid"]);
+			$stmt->execute();
+			$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["images"] = array();
+			
+			foreach($imageResult as $image) 
+				$find["images"][] = $image["id"];
+
+			$stmt = $this->db->prepare("select id from video where find_id = :id");
+			$stmt->bindValue(":id", $find["id"]);
+			$stmt->execute();
+			$videoResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["videos"] = array();
+			
+			foreach($videoResult as $video) {
+				$find["videos"][] = $video["id"];
+			}
+			
+			$stmt = $this->db->prepare("select id from audio where find_id= :id");
+			$stmt->bindValue(":id", $find["id"]);
+			$stmt->execute();
+			$audioResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["audioClips"] = array();
+			
+			foreach($audioResult as $audio) {
+				$find["audioClips"][] = $audio["id"];
+			}
+			
+			$result[] = $find;
+		}
+
+		return $result;
+	}
+	/**
+	 * get all the finds for a project that meet the search criteria for the project name and description
+	 * @param unknown_type $projectId
+	 */
+	function advancedSearchForFinds($projectId, $searchFor, $descr, $lastTime = null) {
+		Log::getInstance()->log("getFinds, projectId = $projectId");
+		if($lastTime != null){
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+			latitude, longitude, revision from find where add_time > :lastTime
+			 and project_id = :projectId and name like :searchFor and description like :descr and deleted=0 order by add_time"
+		);	
+		$stmt->bindValue(":lastTime", $lastTime);
+		}else{
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+				latitude, longitude, revision from find where project_id = :projectId and name like :searchFor and description like :descr and deleted=0 order by add_time"
+			);	
+		}
+		$stmt->bindValue(":projectId", $projectId);
+		$stmt->bindValue(":searchFor", "%" . $searchFor . "%");
+		$stmt->bindValue(":descr", "%" . $descr . "%");
+/**		$stmt->bindValue(":searchFor", "%e%");*/
+		$stmt->execute();
+		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$result = array();
+		
+		foreach ($temp as $find) {
+			$stmt =  $this->db->prepare("select id from photo where guid = :id");
+			$stmt->bindValue(":id", $find["guid"]);
+			$stmt->execute();
+			$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["images"] = array();
+			
+			foreach($imageResult as $image) 
+				$find["images"][] = $image["id"];
+
+			$stmt = $this->db->prepare("select id from video where find_id = :id");
+			$stmt->bindValue(":id", $find["id"]);
+			$stmt->execute();
+			$videoResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["videos"] = array();
+			
+			foreach($videoResult as $video) {
+				$find["videos"][] = $video["id"];
+			}
+			
+			$stmt = $this->db->prepare("select id from audio where find_id= :id");
+			$stmt->bindValue(":id", $find["id"]);
+			$stmt->execute();
+			$audioResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["audioClips"] = array();
+			
+			foreach($audioResult as $audio) {
+				$find["audioClips"][] = $audio["id"];
+			}
+			
+			$result[] = $find;
+		}
+
+		return $result;
+	}
+
+	/**
 	 * get a specific find
 	 * @param unknown_type $id
 	 */

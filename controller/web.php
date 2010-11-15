@@ -311,6 +311,48 @@ function webController($path, $request) {
 				$smarty->assign("finds", $finds);
 				$smarty->display("project_display.tpl");
 				break;
+			case 'advanced.search':
+				list($queryID, $querySearch) = explode("&", $queryString);
+				list($queryType, $queryValue) = explode("=", $queryID);
+				list($querySearchType, $querySearchFor) = explode("=", $querySearch);
+				$id = $queryValue;
+				$searchFor = str_replace("+", " ", $querySearchFor);
+				$project = $dao->getProject($id);
+				$smarty->assign("project", $project);
+				$finds = $dao->searchForFinds($id, $searchFor);
+				$smarty->assign("finds", $finds);
+				$smarty->assign("searchFor", $searchFor);
+				$smarty->display("advanced_search.tpl");
+				break;
+			case 'project.searchForFind':
+				list($queryID, $querySearch) = explode("&", $queryString);
+				list($queryType, $queryValue) = explode("=", $queryID);
+				list($querySearchType, $querySearchFor) = explode("=", $querySearch);
+				$id = $queryValue;
+				$searchFor = str_replace("+", " ", $querySearchFor);
+				$project = $dao->getProject($id);
+				$smarty->assign("project", $project);
+				$finds = $dao->searchForFinds($id, $searchFor);
+				$smarty->assign("finds", $finds);
+				$smarty->assign("searchFor", $searchFor);
+				$smarty->display("project_searchForFinds_display.tpl");
+				break;
+			case 'advanced.searchForFind':
+				list($queryID, $queryProject, $queryDescr) = explode("&", $queryString);
+				list($queryType, $queryValue) = explode("=", $queryID);
+				list($querySearchType, $querySearchProj) = explode("=", $queryProject);
+				list($queryDescription, $querySearchDescr) = explode("=", $queryDescr);
+				$id = $queryValue;
+				$searchFor = str_replace("+", " ", $querySearchProj);
+				$querySearchDescr = str_replace("+", " ", $querySearchDescr);
+				$project = $dao->getProject($id);
+				$smarty->assign("project", $project);
+				$finds = $dao->advancedSearchForFinds($id, $searchFor, $querySearchDescr);
+				$smarty->assign("descriptionVal", $querySearchDescr);
+				$smarty->assign("finds", $finds);
+				$smarty->assign("projectVal", $searchFor);
+				$smarty->display("advanced_searchForFinds_display.tpl");
+				break;
 			case 'find.display':
 				list($queryType, $queryValue) = explode("=", $queryString);
 				$id = $queryValue;

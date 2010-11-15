@@ -1,6 +1,6 @@
 {include file="header.tpl" title=$project.name tab="projects"}
 <h2>{$project.name}</h2>
-<div class="project_finds">
+<div class="project_searchForFinds">
 <div id="secondary-menu">
 <a href="projects">All Projects</a>
 <a href="project.delete?id={$project.id}">Delete Project</a>
@@ -14,6 +14,8 @@
 	<input type="text" name="searchTag"/>
 	<input type="submit" value="Search For Finds"/>
 </form>
+
+<h2>Search results for: "{$searchFor}"</h2>
 	{foreach from=$finds item=find}
 	<div class="list-item">
 		<div class="find_name"><a href="find.display?id={$find.guid}">{$find.name}</a></div>
