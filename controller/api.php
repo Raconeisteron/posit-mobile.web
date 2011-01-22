@@ -113,7 +113,12 @@ function apiController($path, $request, $files = null) {
 			echo $dao->getDeltaFindsIds($authKey, $request["projectId"]);
 			break;
 		case 'recordSync':
-			echo $dao->recordSync($deviceIdentifier, $authKey);
+		        $projectId = -1;
+  		     	if($request["projectId"]){
+				$projectId = intval($request["projectId"]);
+			}		
+			echo $dao->recordSync($deviceIdentifier, $authKey,$projectId);
+			//echo $dao->recordSync($deviceIdentifier, $authKey);
 			break;
 		case 'registerDevice':
 			$imei = $request["imei"];

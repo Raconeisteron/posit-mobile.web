@@ -49,68 +49,85 @@ class DAO {
 		$this->db = dbConnect();
 	}
 	
-	/**
-	 *  returns a comma-delimited list of all finds since last sync for a given device
-	 *  @param unknown_type $imei the device's id
-	 */
-	 function getDeltaFindsIds($auth_key, $pid) {
-	 	Log::getInstance()->log("getDeltaFindsIds: $auth_key");
-		
-		// Get the timestamp of the last sync with this device
-		$stmt = $this->db->prepare(
-			"SELECT MAX(sync_history.time) FROM sync_history WHERE auth_key = :auth_key"); 
-		$stmt->bindValue(":auth_key", $auth_key);
-		$stmt->execute();
-		$result = $stmt->fetch(PDO::FETCH_NUM);
-		//print_r($result);
-		$time = $result[0];
-		Log::getInstance()->log("getDeltaFindsIds: Max Time = |$time|");
-                
+	 /**
+	  *  returns a comma-delimited list of all finds since last sync for a given device
+	  *  @param unknown_type $imei the device's id
+	  */
+	  function getDeltaFindsIds($auth_key, $pid) {
+      	      Log::getInstance()->log("getDeltaFindsIds: $auth_key");
+		      						 
+   	      // Get the timestamp of the last sync with this device
+							   
+	      if ($pid > -1){
+	   	 $stmt = $this->db->prepare(
+		       "SELECT MAX(sync_history.time) FROM sync_history WHERE sync_history.project_id = '$pid' AND auth_key = :auth_key"); 
+	       }else{
+ 	         $stmt = $this->db->prepare(
+     	               "SELECT MAX(sync_history.time) FROM sync_history WHERE sync_history.project_id = -1 AND auth_key = :auth_key"); 
+     	       }
+									      
+	       $stmt->bindValue(":auth_key", $auth_key);
+  	       $stmt->execute();
+ 	       $result = $stmt->fetch(PDO::FETCH_NUM);
+      	       //print_r($result);
+	       $time = $result[0];
+																				       	     
+	       Log::getInstance()->log("getDeltaFindsIds: Max Time = |$time|");
+               
                 //  If there is no MAX time, this is a new device, so get all Finds -- i.e. some may have been
                 //   input from other phones
 
-		if ($time == NULL) {
-			Log::getInstance()->log("getDeltaFindsIds: IF time = $time");	
-		        $res = mysql_query(
-			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE find_history.auth_key != '$auth_key' AND find.guid=find_history.find_guid AND find.project_id = '$pid' AND find.deleted=0" ) 
-			or die(mysql_error());  
+	        if ($time == NULL) {
+	     	       Log::getInstance()->log("getDeltaFindsIds: IF time = $time");	
+  		       $res = mysql_query(
+		       	 "SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE find_history.auth_key != '$auth_key' AND find.guid=find_history.find_guid AND find.project_id = '$pid' AND find.deleted=0" ) 
+	 	 	  or die(mysql_error());  
                 } else {
-			Log::getInstance()->log("getDeltaFindsIds: ELSE time = $time");	
-       		        $res = mysql_query(
-			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0 AND find.guid=find_history.find_guid AND find.project_id = '$pid' AND find.deleted=0") 
-			or die(mysql_error());  
+		       Log::getInstance()->log("getDeltaFindsIds: ELSE time = $time");	
+ 		       $res = mysql_query(
+			  "SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0 AND find.guid=find_history.find_guid AND find.project_id = '$pid' AND find.deleted=0") 
+	 	 	  or die(mysql_error());  
                 }
 
 //SELECT DISTINCT find_history.find_guid FROM find_history, find WHERE find_history.imei != '351677030043731' AND find.guid = find_history.find_guid AND find.project_id = 6
 
 
-		// Get a list of the Finds (guids) that have changed since the last update
+    	       // Get a list of the Finds (guids) that have changed since the last update
 
 		while ($row = mysql_fetch_row($res)) {
-			$list .= "$row[0],";
-		}
-		$this->createLog("I","getDeltaFindsIds",$list);    				
+		      $list .= "$row[0],";
+	        }
+		$this->createLog("I","getDeltaFindsIds",$list);					
 		Log::getInstance()->log("getDeltaFindsIds: $list");
 		return $list;
-	 }
-	
-	/**
-	 * records a record in the sync_history table
-	 * @param unknown_type $imei
-	 */
-	 function recordSync($imei, $authKey) {
-	 	$this->createLog("I","recordSync","Imei:".$imei, "Authkey:".$authKey);
-		$stmt = $this->db->prepare(
-			"INSERT INTO sync_history (imei, auth_key) VALUES (:imei,:authkey)"
-		); 
-		$stmt->bindValue(":imei", $imei);
-		$stmt->bindValue(":authkey", $authKey);
-		$stmt->execute();
-		$lastid = $this->db->lastInsertId();
-		$this->createLog("I","lastInsertId","Last id = ".$lastid);
-		return $lastid;
-	 }
-	 
+	    }
+
+    /**
+     * records a record in the sync_history table
+     * @param unknown_type $imei
+     */
+     function recordSync($imei, $authKey, $projectId) {
+ 	 $this->createLog("I","recordSync","Imei:".$imei, "Authkey:".$authKey, "Projectid:".$projectId);
+										 						  
+         if ($projectId > -1){
+ 	    $stmt = $this->db->prepare(
+	      	   "INSERT INTO sync_history (imei, auth_key, project_id) VALUES (:imei,:authkey,:projectid)"
+   	    ); 
+	    $stmt->bindValue(":projectid", $projectId);
+	  }else{
+	     $stmt = $this->db->prepare(
+		"INSERT INTO sync_history (imei, auth_key) VALUES (:imei,:authkey)"
+	     ); 	       
+          }
+          $stmt->bindValue(":imei", $imei);
+          $stmt->bindValue(":authkey", $authKey);
+          $stmt->execute();
+          $lastid = $this->db->lastInsertId();
+	  $this->createLog("I","lastInsertId","Last id = ".$lastid);
+	  return $lastid;
+     }
+
+
 	/**
 	 * Renames expedition and returns a boolean based on the success of the query
 	 * @param $expId
