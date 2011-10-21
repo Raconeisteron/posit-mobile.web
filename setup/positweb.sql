@@ -1,20 +1,23 @@
 -- phpMyAdmin SQL Dump
--- version 2.9.1.1-Debian-6
+-- version 2.11.8.1deb5+lenny8
 -- http://www.phpmyadmin.net
--- 
+--
 -- Host: localhost
--- Generation Time: Oct 09, 2010 at 05:25 PM
--- Server version: 5.0.32
--- PHP Version: 5.2.0-8+etch7
--- 
--- Database: `ram_posit_august2010`
--- 
+-- Generation Time: Oct 21, 2011 at 11:39 AM
+-- Server version: 5.0.51
+-- PHP Version: 5.2.6-1+lenny10
+
+SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
+
+--
+-- Database: `posit_x`
+--
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `audio`
--- 
+--
 
 DROP TABLE IF EXISTS `audio`;
 CREATE TABLE IF NOT EXISTS `audio` (
@@ -28,9 +31,9 @@ CREATE TABLE IF NOT EXISTS `audio` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `device`
--- 
+--
 
 DROP TABLE IF EXISTS `device`;
 CREATE TABLE IF NOT EXISTS `device` (
@@ -48,9 +51,9 @@ CREATE TABLE IF NOT EXISTS `device` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `expedition`
--- 
+--
 
 DROP TABLE IF EXISTS `expedition`;
 CREATE TABLE IF NOT EXISTS `expedition` (
@@ -66,9 +69,9 @@ CREATE TABLE IF NOT EXISTS `expedition` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `find`
--- 
+--
 
 DROP TABLE IF EXISTS `find`;
 CREATE TABLE IF NOT EXISTS `find` (
@@ -88,13 +91,27 @@ CREATE TABLE IF NOT EXISTS `find` (
   PRIMARY KEY  (`id`),
   UNIQUE KEY `guid` (`guid`),
   KEY `project_id` (`project_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=116 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=127 ;
 
 -- --------------------------------------------------------
 
--- 
+--
+-- Table structure for table `find_extension`
+--
+
+DROP TABLE IF EXISTS `find_extension`;
+CREATE TABLE IF NOT EXISTS `find_extension` (
+  `id` mediumint(9) NOT NULL auto_increment,
+  `find_id` mediumint(9) NOT NULL,
+  `data` text NOT NULL,
+  PRIMARY KEY  (`id`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `find_history`
--- 
+--
 
 DROP TABLE IF EXISTS `find_history`;
 CREATE TABLE IF NOT EXISTS `find_history` (
@@ -105,13 +122,13 @@ CREATE TABLE IF NOT EXISTS `find_history` (
   `imei` varchar(50) NOT NULL,
   `auth_key` varchar(64) NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=150 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=164 ;
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `forms`
--- 
+--
 
 DROP TABLE IF EXISTS `forms`;
 CREATE TABLE IF NOT EXISTS `forms` (
@@ -125,9 +142,9 @@ CREATE TABLE IF NOT EXISTS `forms` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `gps_sample`
--- 
+--
 
 DROP TABLE IF EXISTS `gps_sample`;
 CREATE TABLE IF NOT EXISTS `gps_sample` (
@@ -144,9 +161,9 @@ CREATE TABLE IF NOT EXISTS `gps_sample` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `logs`
--- 
+--
 
 DROP TABLE IF EXISTS `logs`;
 CREATE TABLE IF NOT EXISTS `logs` (
@@ -160,9 +177,9 @@ CREATE TABLE IF NOT EXISTS `logs` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `photo`
--- 
+--
 
 DROP TABLE IF EXISTS `photo`;
 CREATE TABLE IF NOT EXISTS `photo` (
@@ -182,9 +199,9 @@ CREATE TABLE IF NOT EXISTS `photo` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `project`
--- 
+--
 
 DROP TABLE IF EXISTS `project`;
 CREATE TABLE IF NOT EXISTS `project` (
@@ -195,13 +212,13 @@ CREATE TABLE IF NOT EXISTS `project` (
   `permission_type` set('open','closed') NOT NULL default 'open',
   `deleted` tinyint(1) NOT NULL default '0',
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=12 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=14 ;
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `sync_history`
--- 
+--
 
 DROP TABLE IF EXISTS `sync_history`;
 CREATE TABLE IF NOT EXISTS `sync_history` (
@@ -215,9 +232,9 @@ CREATE TABLE IF NOT EXISTS `sync_history` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `user`
--- 
+--
 
 DROP TABLE IF EXISTS `user`;
 CREATE TABLE IF NOT EXISTS `user` (
@@ -231,13 +248,13 @@ CREATE TABLE IF NOT EXISTS `user` (
   `create_time` datetime NOT NULL,
   PRIMARY KEY  (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=12 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=14 ;
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `user_project`
--- 
+--
 
 DROP TABLE IF EXISTS `user_project`;
 CREATE TABLE IF NOT EXISTS `user_project` (
@@ -249,9 +266,9 @@ CREATE TABLE IF NOT EXISTS `user_project` (
 
 -- --------------------------------------------------------
 
--- 
+--
 -- Table structure for table `video`
--- 
+--
 
 DROP TABLE IF EXISTS `video`;
 CREATE TABLE IF NOT EXISTS `video` (
@@ -262,3 +279,4 @@ CREATE TABLE IF NOT EXISTS `video` (
   PRIMARY KEY  (`id`),
   KEY `find_id` (`find_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
