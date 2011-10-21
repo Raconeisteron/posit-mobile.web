@@ -1199,7 +1199,7 @@ class DAO {
 		$stmt->bindValue(":data", $data);
 		$stmt->execute();
 		
-		$this->createLog("I","createFind","lastInsertId()=$findid", "extended data=$data");
+		Log::getInstance()->log("createFind"." lastInsertId()=$findid"." extended data=$data");
 		
 		// Make an entry in find_history
 		$stmt = $this->db->prepare(
