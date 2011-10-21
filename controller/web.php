@@ -362,7 +362,7 @@ function webController($path, $request) {
 				$project_id = $find["project_id"];
 				$project = $dao->getProject($project_id);;
 				
-				
+				$smarty->assign("extension",$find["extension"]);
 				$smarty->assign("images",$find["images"]);
 //				$smarty->assign("videos",$find["videos"]);
 //				$smarty->assign("audioClips",$find["audioClips"]);

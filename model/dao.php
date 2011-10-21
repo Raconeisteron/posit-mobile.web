@@ -744,6 +744,19 @@ class DAO {
 			$result[0]["videos"][] = $video["id"];
 		}
 *********************/
+		$stmt = $this->db->prepare("select id from find where guid = :id");
+		$stmt->bindValue(":id",$guid);
+		$stmt->execute();
+		$idResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$id = $idResult[0]["id"];
+		Log::getInstance()->log("getFind: id = $id");
+
+		$stmt = $this->db->prepare("select data from find_extension where find_id = :id");
+		$stmt->bindValue(":id", $id);
+		$stmt->execute();
+		$extensionResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$result[0]["extension"]=$extensionResult[0]["data"];
+
 		return $result[0];
 	
 	}
@@ -1144,6 +1157,7 @@ class DAO {
 		$stmt->execute();
 		echo "Deletion of audio clip with find_id = ".$findId." successful.";
 	}
+	
 	/**
 	 * Create  a new find
 	 * @param unknown_type $guId
@@ -1154,8 +1168,8 @@ class DAO {
 	 * @param unknown_type $longitude
 	 * @param unknown_type $revision
 	 */
-	function createFind($auth_key, $imei, $guId, $projectId, $name, $description, $latitude, $longitude, $revision) {
-		Log::getInstance()->log("createFind: $guId, $projectId, $name, $description, $latitude, $longitude, $revision");
+	function createFind($auth_key, $imei, $guId, $projectId, $name, $description, $latitude, $longitude, $revision, $data) {
+		Log::getInstance()->log("createFind: $guId, $projectId, $name, $description, $latitude, $longitude, $revision, $data");
 
                 // Note use of 'on duplicate key update'
                 $stmt = $this->db->prepare(
@@ -1177,7 +1191,15 @@ class DAO {
 		$stmt->execute(); 
 		
 		$findid = $this->db->lastInsertId();
-		$this->createLog("I","createFind","lastInsertId()=$findid");
+		
+		$stmt = $this->db->prepare(
+				"insert into find_extension(find_id, data) VALUES (:find_id, :data)");
+				
+		$stmt->bindValue(":find_id", $findid);
+		$stmt->bindValue(":data", $data);
+		$stmt->execute();
+		
+		$this->createLog("I","createFind","lastInsertId()=$findid", "extended data=$data");
 		
 		// Make an entry in find_history
 		$stmt = $this->db->prepare(
@@ -1196,6 +1218,8 @@ class DAO {
 //		return $findid; //get the rowid where it's inserted so that the client can sync.. @todo update in API
 		return "True Created $guId in row=$findid";  
 	}
+	
+	
 	/**
 	 * Update information about a find
 	 * @param unknown_type $guId -- globally unique ID

@@ -12,6 +12,8 @@
 	<br><b>Project: </b>{$project.name}
 	<br><b>Time Added: </b>{$find.add_time}
 	<br><b>Location: </b> [Longitude={$find.longitude}, Latitude={$find.latitude}]
+	<br><b>Extras: </b> {$extension}	
+
 
 <!-- 	<div class="find_description">{$find.description}</div> 
 	
