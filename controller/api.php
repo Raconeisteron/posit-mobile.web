@@ -116,9 +116,9 @@ function apiController($path, $request, $files = null) {
 		case 'recordSync':
 		        $projectId = -1;
   		     	if($request["projectId"]){
-				$projectId = intval($request["projectId"]);
+				$projectId = (int)$request["projectId"];
 			}		
-			echo $dao->recordSync($deviceIdentifier, $authKey,$projectId);
+			echo $dao->recordSync($request["imei"], $authKey,$projectId);
 			//echo $dao->recordSync($deviceIdentifier, $authKey);
 			break;
 		case 'registerDevice':
