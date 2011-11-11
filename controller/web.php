@@ -356,7 +356,8 @@ function webController($path, $request) {
 			case 'find.display':
 				list($queryType, $queryValue) = explode("=", $queryString);
 				$id = $queryValue;
-				$find = $dao->getFind($id);
+				$result = $dao->getFind($id);
+				$find = $result["find"];
 				
 //				$find = $dao->getFind($find["barcode_id"]);
 				$project_id = $find["project_id"];

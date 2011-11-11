@@ -107,7 +107,7 @@ class DAO {
      * @param unknown_type $imei
      */
      function recordSync($imei, $authKey, $projectId) {
- 	 $this->createLog("I","recordSync","Imei:".$imei, "Authkey:".$authKey, "Projectid:".$projectId);
+ 	 Log::getInstance()->log("recordSync"."Imei:".$imei. "Authkey:".$authKey. "Projectid:".$projectId);
 										 						  
          if ($projectId > -1){
  	    $stmt = $this->db->prepare(
@@ -709,7 +709,7 @@ class DAO {
 		}    				
 ***************/
 		$result = array();
-		$result[0]= $temp[0];
+		$result[0]["find"]= $temp[0];
 		$this->createLog("I","getFind length of record"," " . count($result[0]));
 
 		$result[0]["images"] = array();
