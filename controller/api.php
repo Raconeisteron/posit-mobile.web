@@ -24,7 +24,7 @@ function apiController($path, $request, $files = null) {
 
 	$authKey = $request["authKey"];
 
-	if($action!="login" && $action!="registerUser" && $action != "registerDevice" && $action != "getPendingDeviceStatus" && !$authKey) {
+	if($action != "isreachable" && $action!="login" && $action!="registerUser" && $action != "registerDevice" && $action != "getPendingDeviceStatus" && !$authKey) {
 		$response = array(
 			"errorCode" => ERR_AUTHKEY_MISSING,
 			"errorMessage" => "You must provide an authentication key with each request."
@@ -32,7 +32,7 @@ function apiController($path, $request, $files = null) {
 			echo json_encode($response);
 			die();
 	}
-	if ($action != "login" && $action != "registerUser"){
+	if ($action != isreachable && $action != "login" && $action != "registerUser"){
 		$device = $dao->getDeviceByAuthKey($authKey);
 
 		if($action != "registerDevice" && $action != "getPendingDeviceStatus" && !$device) {
@@ -45,9 +45,10 @@ function apiController($path, $request, $files = null) {
 	}
 
 
-
-
 	switch($action) {
+	        case 'isreachable':
+		    jsonMessage(AUTHN_OK, "The server is reachable");
+		    break;		       
 		case 'login':
 			extract($request);
 			if(!$email){
