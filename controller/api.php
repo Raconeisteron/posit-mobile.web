@@ -195,7 +195,8 @@ function apiController($path, $request, $files = null) {
 			$request["name"], $request["description"], $request["latitude"], $request["longitude"], $request["revision"], $request["data"]);
 			break;
 		case 'updateFind':
-			echo $dao->updateFind($authKey, $request["imei"],$request["guid"],$request["project_id"],$request["name"], $request["description"], $request["revision"]);
+			echo $dao->updateFind($authKey, $request["imei"],$request["guid"],$request["project_id"],$request["name"], $request["description"], 
+			$request["revision"],$request["data"]);
 			break;
 
 		case 'attachPicture':

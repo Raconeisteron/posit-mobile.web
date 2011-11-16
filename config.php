@@ -2,15 +2,15 @@
 // Copy this to config.php and edit.
 
 // base uri of server instance
-define(SERVER_BASE_URI, "http://192.168.1.105/positweb2");
+define(SERVER_BASE_URI, "http://turing.cs.trincoll.edu/~ram/positweb/web/main");
 // database hostname
-define("DB_HOST", "localhost");
+define("DB_HOST", "storage1.cs.trincoll.edu");
 // database username
 define("DB_USER", "posit");
 // database password
-define("DB_PASS", "");
+define("DB_PASS", "posit157");
 // database name
-define("DB_NAME", "posit_august2010");
+define("DB_NAME", "posit_x");
 
 /* dg6TR9ar3GX2 */
 
@@ -25,7 +25,7 @@ if (LOG){
 define("LOG_FILE", "./logs/log.txt");
 }
 
-define ("GOOGLE_MAPS_KEY", "ABQIAAAAUlJap888YXnyJ0x-3SD9JxROxdxrcLD3lYp40t9TM89VIkUnWRRc_5dMwOIgoN9RSP_iwkdVaejk5g");
+define ("GOOGLE_MAPS_KEY", "ABQIAAAAl-U6nA2OYa7Leg_UhWuVUxQrF6HC-Cb-X9u3nmmC08_mW1SFYxRCIDufEZOnxU8bzmhfi6oBv_xUtA");
 
 define ("POSIT_ANDROID_CODE", "/build_dir/posit-android");
 define ("ANDROID_SDK_DIR", "/build_dir/android-sdk");
