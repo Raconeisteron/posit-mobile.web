@@ -72,7 +72,7 @@ class DAO {
       	       //print_r($result);
 	       $time = $result[0];
 																				       	     
-	       Log::getInstance()->log("getDeltaFindsIds: Max Time = |$time|");
+	       Log::getInstance()->log("getDeltaFindsIds: Max Time = |$time| and PID = $pid");
                
                 //  If there is no MAX time, this is a new device, so get all Finds -- i.e. some may have been
                 //   input from other phones
@@ -744,18 +744,20 @@ class DAO {
 			$result[0]["videos"][] = $video["id"];
 		}
 *********************/
+
 		$stmt = $this->db->prepare("select id from find where guid = :id");
 		$stmt->bindValue(":id",$guid);
 		$stmt->execute();
 		$idResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		$id = $idResult[0]["id"];
-		Log::getInstance()->log("getFind: id = $id");
 
 		$stmt = $this->db->prepare("select data from find_extension where find_id = :id");
 		$stmt->bindValue(":id", $id);
 		$stmt->execute();
 		$extensionResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		$result[0]["extension"]=$extensionResult[0]["data"];
+		$xdata = $result[0]["extension"];
+		Log::getInstance()->log("getFind: extra data = $xdata");
 
 		return $result[0];
 	
@@ -1169,7 +1171,7 @@ class DAO {
 	 * @param unknown_type $revision
 	 */
 	function createFind($auth_key, $imei, $guId, $projectId, $name, $description, $latitude, $longitude, $revision, $data) {
-		Log::getInstance()->log("createFind: $guId, $projectId, $name, $description, $latitude, $longitude, $revision, $data");
+		Log::getInstance()->log("dao.createFind: $guId, $projectId, $name, $description, $latitude, $longitude, $revision, $data");
 
                 // Note use of 'on duplicate key update'
                 $stmt = $this->db->prepare(
@@ -1227,8 +1229,8 @@ class DAO {
 	 * @param unknown_type $description
 	 * @param unknown_type $revision
 	 */
-	function updateFind($auth_key,$imei, $guId, $projectId, $name, $description, $revision) {
-		Log::getInstance()->log("updateFind: $auth_key, $imei, $guId, $projectId, $name, $description, $revision");
+	function updateFind($auth_key,$imei, $guId, $projectId, $name, $description, $revision, $data) {
+		Log::getInstance()->log("updateFind: $auth_key, $imei, $guId, $projectId, $name, $description, $revision, $data");
 		$stmt = $this->db->prepare("update find set name = :name, description = :description, 
 			revision = :revision, modify_time = NOW() where guid = :guid AND project_id = :projectId");
 		
@@ -1239,6 +1241,24 @@ class DAO {
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
 		$this->createLog("I","updateFind","Updated Find= $guId");
+		Log::getInstance()->log("getFind: id = $id");
+		
+		// Get this Find's id for query to extended data
+		$stmt = $this->db->prepare("select id from find where guid = :guid");
+		$stmt->bindValue(":guid", $guId);
+		$stmt->execute();
+		$idResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$id = $idResult[0]["id"];
+		Log::getInstance()->log("updateFind: id = $id");
+
+		// Update the extended data
+		$stmt = $this->db->prepare(
+				"update find_extension set data = :data where find_id = :find_id");
+				
+		$stmt->bindValue(":find_id", $id);
+		$stmt->bindValue(":data", $data);
+		$stmt->execute();
+		Log::getInstance()->log("updateFind: updated extended data for find_id = $id");
 
 		// Make an entry in find_history
 		$stmt = $this->db->prepare(

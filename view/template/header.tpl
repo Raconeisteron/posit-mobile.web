@@ -35,7 +35,7 @@
  
         
                   <div id="site-slogan"> 
-            Portable Open Search and Identification Tool          </div> 
+            Portable Open Source Information Tool          </div> 
         
         </div> <!-- /name-and-slogan --> 
  

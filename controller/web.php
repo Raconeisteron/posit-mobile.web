@@ -358,12 +358,13 @@ function webController($path, $request) {
 				$id = $queryValue;
 				$result = $dao->getFind($id);
 				$find = $result["find"];
-				
-//				$find = $dao->getFind($find["barcode_id"]);
+				$extension = $result["extension"];
+
+				Log::getInstance()->log("find.display.Find = $find");
 				$project_id = $find["project_id"];
 				$project = $dao->getProject($project_id);;
 				
-				$smarty->assign("extension",$find["extension"]);
+				$smarty->assign("extension",$extension);
 				$smarty->assign("images",$find["images"]);
 //				$smarty->assign("videos",$find["videos"]);
 //				$smarty->assign("audioClips",$find["audioClips"]);
