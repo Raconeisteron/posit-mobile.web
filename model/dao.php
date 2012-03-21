@@ -689,39 +689,49 @@ class DAO {
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		
 /********* Try to return the thumbnail
-		$stmt = $this->db->prepare("select imei, data_thumb from photo where guid = :id");
+		$stmt = $this->db->prepare("select imei, data_full from photo where guid = :id");
 		$stmt->bindValue(":id", $guid);
 		$stmt->execute();
 		$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			
 		$find["images"] = array();
 		foreach($imageResult as $image) {
-			$img = "data:image/jpeg;base64," . base64_encode($image["data_thumb"]);
-			$find["img"] = $img;
-			$find["images"][] = $image["guid"];
+                        $img = "data:image/jpeg;base64," . base64_encode($image["data_thumb"]);
+                        $find["img"] = $img;
+                        $find["images"][] = $image["guid"];
 		}
 		
 **************/
-		
 /*********
 		foreach ($temp[0] as $key=>$value) {
 			$this->createLog("I","getFind temp: $key = $value");
 		}    				
 ***************/
+
 		$result = array();
 		$result[0]["find"]= $temp[0];
-		$this->createLog("I","getFind length of record"," " . count($result[0]));
+//		$this->createLog("I","getFind length of record"," " . count($result[0]));
 
+		// Get this Find's images
+                //
 		$result[0]["images"] = array();
-		
 		$stmt = $this->db->prepare("select id from photo where guid = :id");
+//		$stmt = $this->db->prepare("select data_full from photo where guid = :id");
 		$stmt->bindValue(":id", $guid);
 		$stmt->execute();
 		$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+		
+		// Currently only 1 image can be displayed on the phone.  So this will display the 
+		//  last image. 
+		// TODO:  Upgrade to store multiple images per find.
 		foreach($imageResult as $image) {
+//			$result[0]["img"] = "data:image/jpeg;base64," .  base64_encode($image["data_full"]);
+//			$result[0]["images"][] = "data:image/jpeg;base64," .  base64_encode($image["data_full"]);
 			$result[0]["images"][] = $image["id"];
 		}
+//		Log::getInstance()->log("getFind: number of images = " . count($result[0]["images"])   . " " . $result[0]["images"][0]);
+//		Log::getInstance()->log("getFind: image = " . $result[0]["img"]);
 		
 /************
 		$result[0]["audios"] = array();
@@ -758,6 +768,13 @@ class DAO {
 		$result[0]["extension"]=$extensionResult[0]["data"];
 		$xdata = $result[0]["extension"];
 		Log::getInstance()->log("getFind: extra data = $xdata");
+
+//		foreach($imageResult as $image) {
+//			$result[0]["images"][] = $image["id"];
+//		}
+
+//		Log::getInstance()->log("getFind: image =" .  $result[0]["img"]);
+		Log::getInstance()->log("getFind: number of images =" .  count($result[0]["images"]));
 
 		return $result[0];
 	
@@ -925,6 +942,7 @@ class DAO {
 	 */
 	
 	function addExpeditionPoint($expeditionId, $latitude, $longitude, $altitude, $swath, $time){
+		Log::getInstance()->log("addExpeditionPoint, expId=$expeditionId, lat=$latitude,long=$longitude,alt=$altitude,swath=$swath,t=$time");
 		$stmt = $this->db->prepare("INSERT INTO gps_sample ( expedition_id, latitude, longitude , altitude, swath, time, sample_time)" 
 		."VALUES (:expeditionId, :latitude, :longitude, :altitude, :swath, :time, now() )");
 		$stmt->bindValue(":expeditionId", $expeditionId);
@@ -940,7 +958,8 @@ class DAO {
 	
 	function getExpeditions($projectId){
 		
-		$this->createLog("I","getExpeditions"," $projectId");
+		Log::getInstance()->log("getExpeditions, projectId = $projectId");
+//		$this->createLog("I","getExpeditions"," $projectId");
 		$stmt = $this->db->prepare("SELECT id, name, description, project_id FROM expedition WHERE project_id= :projectId ");
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
@@ -1229,16 +1248,18 @@ class DAO {
 	 * @param unknown_type $description
 	 * @param unknown_type $revision
 	 */
-	function updateFind($auth_key,$imei, $guId, $projectId, $name, $description, $revision, $data) {
-		Log::getInstance()->log("updateFind: $auth_key, $imei, $guId, $projectId, $name, $description, $revision, $data");
+	function updateFind($auth_key,$imei, $guId, $projectId, $name, $description, $revision, $data, $latitude, $longitude) {
+		Log::getInstance()->log("updateFind: $auth_key, $imei, $guId, $projectId, $name, $description, $revision, $data, $latitude, $longitude");
 		$stmt = $this->db->prepare("update find set name = :name, description = :description, 
-			revision = :revision, modify_time = NOW() where guid = :guid AND project_id = :projectId");
+			revision = :revision, modify_time = NOW(), latitude = :latitude, longitude = :longitude where guid = :guid AND project_id = :projectId");
 		
 		$stmt->bindValue(":name", $name);
 		$stmt->bindValue(":description", $description);
 		$stmt->bindValue(":revision", $revision);
 		$stmt->bindValue(":guid", $guId);
 		$stmt->bindValue(":projectId", $projectId);
+		$stmt->bindValue(":latitude", $latitude);
+		$stmt->bindValue(":longitude", $longitude);
 		$stmt->execute();
 		$this->createLog("I","updateFind","Updated Find= $guId");
 		Log::getInstance()->log("getFind: id = $id");

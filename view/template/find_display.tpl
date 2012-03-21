@@ -6,7 +6,18 @@
 	<a href="project.display?id={$find.project_id}">All Finds</a>
 </div>
 <div class="find_details">
-<!-- 	<div class="find_img"><IMG src={$find.img} width="40" height="40"></div>  -->
+<!--  	<div class="find_img"><IMG src={$find.img} width="40" height="40"></div>   -->
+<!-- 	<div class="find_img"><IMG src={$img} width="100" height="100"></div>  -->
+<!-- 	<div class="find_img"><IMG src={$img} size="full"></div>   -->
+
+	<div class="picture_loop">
+	{foreach from=$images item=imageid}
+	<img src="displayPicture?id={$imageid}&size=full"/>
+	{/foreach}
+	</div>
+	
+	<br />
+
 	<p><b>GUID: </b>{$find.guid}
 	<br><b>Description: </b>{$find.description}
 	<br><b>Project: </b>{$project.name}
@@ -35,12 +46,13 @@
 	
 	</div>
 
+<!-- --- 
 	<div class="picture_loop">
 	{foreach from=$images item=imageid}
 	<img src="displayPicture?id={$imageid}&size=full"/>
 	{/foreach}
 	</div>
-	
+-->	
 	<br />
 	
 	<div class="video_loop">

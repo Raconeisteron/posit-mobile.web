@@ -25,7 +25,8 @@ if (LOG){
 define("LOG_FILE", "./logs/log.txt");
 }
 
-define ("GOOGLE_MAPS_KEY", "ABQIAAAAl-U6nA2OYa7Leg_UhWuVUxQrF6HC-Cb-X9u3nmmC08_mW1SFYxRCIDufEZOnxU8bzmhfi6oBv_xUtA");
+define ("GOGGLE_MAPS_KEY", "ABQIAAAAUlJap888YXnyJ0x-3SD9JxSl1-0QD9KFpbCZlwz41fStZ2VukhQqkV17utXvfFIHFcJv_G-C8OAZrA");
+//define ("GOOGLE_MAPS_KEY", "ABQIAAAAl-U6nA2OYa7Leg_UhWuVUxQrF6HC-Cb-X9u3nmmC08_mW1SFYxRCIDufEZOnxU8bzmhfi6oBv_xUtA");
 
 define ("POSIT_ANDROID_CODE", "/build_dir/posit-android");
 define ("ANDROID_SDK_DIR", "/build_dir/android-sdk");

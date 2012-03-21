@@ -13,7 +13,7 @@ function apiController($path, $request, $files = null) {
 	$pathParts = explode('/', substr($reqPath,1));
 	list($action) = $pathParts;
 	
-//	Log::getInstance()->log("Reached server");
+	Log::getInstance()->log("Reached server");
 	Log::getInstance()->log("$path , $request");
 
 	if ($action != "addExpeditionPoint" && $action != "getDeviceByAuthKey") {
@@ -51,6 +51,8 @@ function apiController($path, $request, $files = null) {
 		    break;		       
 		case 'login':
 			extract($request);
+			Log::getInstance()->log("Login = $request email=$email imei=$imei");
+
 			if(!$email){
 				jsonError(ERR_EMAIL_MISSING, "Email Address is required");
 			}else {
@@ -61,9 +63,9 @@ function apiController($path, $request, $files = null) {
 			if (!$password){
 				jsonError(ERR_PASSWORD_MISSING, "Password is required");
 			}
-			if (!$imei){
-				jsonError(ERR_IMEI_MISSING, "IMEI Code is required");
-			}
+//			if (!$imei){
+//				jsonError(ERR_IMEI_MISSING, "IMEI Code is required");
+//			}
 		
 			if ($login = $dao->checkLogin($email, $password)){
 				$authKey = genAuthKey();
@@ -74,7 +76,6 @@ function apiController($path, $request, $files = null) {
 				}else {
 					jsonError(ERR_SERVER, "Authentication Key cannot be generated");
 				}
-				 	
 			}else {
 				jsonError(AUTHN_FAILED,"Authentication failed. Please Check email address or password.");
 			}
@@ -196,7 +197,7 @@ function apiController($path, $request, $files = null) {
 			break;
 		case 'updateFind':
 			echo $dao->updateFind($authKey, $request["imei"],$request["guid"],$request["project_id"],$request["name"], $request["description"], 
-			$request["revision"],$request["data"]);
+			$request["revision"],$request["data"], $request["latitude"], $request["longitude"]);
 			break;
 
 		case 'attachPicture':
