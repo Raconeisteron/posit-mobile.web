@@ -360,12 +360,16 @@ function webController($path, $request) {
 				$find = $result["find"];
 				$extension = $result["extension"];
 
-				Log::getInstance()->log("find.display.Find = $find");
+//				Log::getInstance()->log("find.display.Find = $find");
+//				Log::getInstance()->log("image = " . $result["img"]);
 				$project_id = $find["project_id"];
 				$project = $dao->getProject($project_id);;
 				
 				$smarty->assign("extension",$extension);
-				$smarty->assign("images",$find["images"]);
+//				$smarty->assign("images",$result["images"]);
+//				$smarty->assign("images",$find["images"]);
+				$smarty->assign("images",$result["images"]);
+				$smarty->assign("img",$result["img"]);          // Display 1 image
 //				$smarty->assign("videos",$find["videos"]);
 //				$smarty->assign("audioClips",$find["audioClips"]);
 				$smarty->assign("project", $project);
