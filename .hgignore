@@ -1,2 +1,6 @@
 syntax:glob
+*~
+config.php
+logs/*
 cache/compile
+uploads/*

@@ -542,3 +542,53 @@ span.password-confirm {
 span.password-confirm span {
   font-weight: normal;
 }
+
+#loginStatus {
+	float:right;
+	display:inline-block;
+}
+
+#login-user {
+	padding-top:5px;
+	display: inline-block;
+}
+
+/**
+ * list css settings
+ */
+.list-item {
+	/*background-color:#8ec0f8;*/
+	margin-bottom: 5px;
+	padding: 5px;
+	border-style:solid;
+	border-color: #c9d0d9;
+	border-width: 1px;
+}
+
+.list-item .project-name {
+	font-weight:bold;
+}
+
+.list-item .project-role {
+	font-size: small;
+	font-style: italic;
+}
+
+.list-item .project-description {
+	font-size: small;
+}
+
+
+#flash {
+	background-color: #91C3E8;
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	
+	text-align: center;
+	
+	display: none;
+}
+

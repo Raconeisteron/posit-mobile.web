@@ -1,7 +1,22 @@
-{include file="header.tpl" title="POSIT Sandbox: Google Android Challenge"}
-<h2>Welcome to the POSIT developer playground!</h2>
-<p>The bravest shall dare enter, for things break... See what we are making and breaking along the way</p>
-<p>The first thing to do is take a second to <a href="{$smarty.const.SERVER_BASE_URI}/web/register">register an account</a>. Then you can use the tabs above to see what other people are finding, and view them on a map!</p>
-<p>Once you register, you can link your phone with your account here by clicking on the <em>Settings</em> tab.</p>
-<p>For more information, see the <a href="http://posit.hfoss.org/">POSIT website</a>.
+{include file="header.tpl" title="POSITx Web Server"}
+
+<h2>Welcome to the POSITx server!</h2>
+
+<p>The first thing to do is <i>register an account</i> by clicking the
+register link (top right). Then you can use the tabs above to explore
+the site and view the <i>Finds</i> that you gather with your Android
+phone! To download the compatible POSITx mobile app, visit <a
+href="http://turing.cs.trincoll.edu/~ram/positx-app/">the POSITx
+download site</a>.
+
+<p>Once you register, you can link your Android phone with your web
+account by clicking on the phone's <em>Settings > Accounts & Sync >
+Add Account > POSITx</em> tab.</p>
+
+
+<p>For more information, see the <a
+href="http://posit.hfoss.org/">POSIT website</a> or the <a
+href="http://turing.cs.trincoll.edu/~ram/positx-app/">the POSITx help
+site</a>.
+
 {include file="footer.tpl}

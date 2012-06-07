@@ -8,6 +8,7 @@ function errorMessage($msg) {
 		die($msg);
 }
 
+
 /**
  * returns an error code and error message
  * @param $errorCode

@@ -6,6 +6,8 @@ require_once("util/validate.php");
 require_once("util/messages.php");
 $path = explode("/", $_SERVER["REQUEST_URI"]);
 
+Log::getInstance()->log("Reached api.php");
+
 for($n=0; $n<count($path); $n++)
 	if($path[$n] == 'api')
 		break;

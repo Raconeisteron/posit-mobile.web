@@ -1,13 +1,30 @@
 {include file="header.tpl" title=$find.name tab="projects"}
-<p><a href="project.display?id={$find.project_id}">All Finds</a></p>
-<h2>Name: {$find.name}</h2>
+
+<h2>Name: {$find.name}</h2><nobr>
+<div id="secondary-menu">
+	<a href=""find.delete?id={$find.guid}">Delete Find</a>
+	<a href="project.display?id={$find.project_id}">All Finds</a>
+</div>
 <div class="find_details">
-<!-- 	<div class="find_img"><IMG src={$find.img} width="40" height="40"></div>  -->
-	<p><b>GUID: </b>{$find.barcode_id}
+<!--  	<div class="find_img"><IMG src={$find.img} width="40" height="40"></div>   -->
+<!-- 	<div class="find_img"><IMG src={$img} width="100" height="100"></div>  -->
+<!-- 	<div class="find_img"><IMG src={$img} size="full"></div>   -->
+
+	<div class="picture_loop">
+	{foreach from=$images item=imageid}
+	<img src="displayPicture?id={$imageid}&size=full"/>
+	{/foreach}
+	</div>
+	
+	<br />
+
+	<p><b>GUID: </b>{$find.guid}
 	<br><b>Description: </b>{$find.description}
 	<br><b>Project: </b>{$project.name}
 	<br><b>Time Added: </b>{$find.add_time}
-	<br><b>Location: </b> [Longitude={$find.longitude},  Latitude={$find.latitude}]
+	<br><b>Location: </b> [Longitude={$find.longitude}, Latitude={$find.latitude}]
+	<br><b>Extras: </b> {$extension}	
+
 
 <!-- 	<div class="find_description">{$find.description}</div> 
 	
@@ -17,7 +34,7 @@
 	<h3>Time Added:</h3>
 	<div class="find_add_time">{$find.add_time}</div>
 	<h3> GUID:</h3>
-	<div class="associated_barcode">{$find.barcode_id}</div>
+	<div class="associated_barcode">{$find.guid}</div>
 	<h3>Location:</h3>
 	<div class="find_location">
 		Longitude: {$find.longitude}
@@ -28,13 +45,14 @@
 	<img src="http://maps.google.com/maps/api/staticmap?zoom=14&size=256x256&markers=color:red|{$find.latitude},{$find.longitude}&sensor=false&key={$smarty.const.GOOGLE_MAPS_KEY}"/>
 	
 	</div>
-	
+
+<!-- --- 
 	<div class="picture_loop">
 	{foreach from=$images item=imageid}
 	<img src="displayPicture?id={$imageid}&size=full"/>
 	{/foreach}
 	</div>
-	
+-->	
 	<br />
 	
 	<div class="video_loop">

@@ -20,7 +20,7 @@ define("DEBUG", true);
 
 // enable if you want to keep log
 // @todo need to do this in many levels - think Log4J
-define("LOG", true);
+define("LOG", false);
 if (LOG){
 define("LOG_FILE", "/where/you/want/log/file");
 }

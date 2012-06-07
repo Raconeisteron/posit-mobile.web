@@ -13,6 +13,9 @@ function apiController($path, $request, $files = null) {
 	$pathParts = explode('/', substr($reqPath,1));
 	list($action) = $pathParts;
 	
+	Log::getInstance()->log("Reached server");
+	Log::getInstance()->log("$path , $request");
+
 	if ($action != "addExpeditionPoint" && $action != "getDeviceByAuthKey") {
 		$log = Log::getInstance();
 		$log->log("$action");
@@ -21,7 +24,7 @@ function apiController($path, $request, $files = null) {
 
 	$authKey = $request["authKey"];
 
-	if($action!="login" && $action!="registerUser" && $action != "registerDevice" && $action != "getPendingDeviceStatus" && !$authKey) {
+	if($action != "isreachable" && $action!="login" && $action!="registerUser" && $action != "registerDevice" && $action != "getPendingDeviceStatus" && !$authKey) {
 		$response = array(
 			"errorCode" => ERR_AUTHKEY_MISSING,
 			"errorMessage" => "You must provide an authentication key with each request."
@@ -29,7 +32,7 @@ function apiController($path, $request, $files = null) {
 			echo json_encode($response);
 			die();
 	}
-	if ($action != "login" && $action != "registerUser"){
+	if ($action != isreachable && $action != "login" && $action != "registerUser"){
 		$device = $dao->getDeviceByAuthKey($authKey);
 
 		if($action != "registerDevice" && $action != "getPendingDeviceStatus" && !$device) {
@@ -42,11 +45,14 @@ function apiController($path, $request, $files = null) {
 	}
 
 
-
-
 	switch($action) {
+	        case 'isreachable':
+		    jsonMessage(AUTHN_OK, "The server is reachable");
+		    break;		       
 		case 'login':
 			extract($request);
+			Log::getInstance()->log("Login = $request email=$email imei=$imei");
+
 			if(!$email){
 				jsonError(ERR_EMAIL_MISSING, "Email Address is required");
 			}else {
@@ -57,9 +63,11 @@ function apiController($path, $request, $files = null) {
 			if (!$password){
 				jsonError(ERR_PASSWORD_MISSING, "Password is required");
 			}
-			if (!$imei){
-				jsonError(ERR_IMEI_MISSING, "IMEI Code is required");
-			}
+
+// NOTE: Tablets don't have imei.  So this will only work for phones.
+//			if (!$imei){
+//				jsonError(ERR_IMEI_MISSING, "IMEI Code is required");
+//			}
 		
 			if ($login = $dao->checkLogin($email, $password)){
 				$authKey = genAuthKey();
@@ -70,7 +78,8 @@ function apiController($path, $request, $files = null) {
 				}else {
 					jsonError(ERR_SERVER, "Authentication Key cannot be generated");
 				}
-				 	
+			}else {
+				jsonError(AUTHN_FAILED,"Authentication failed. Please Check email address or password.");
 			}
 			break;
 		case 'registerUser':
@@ -94,23 +103,26 @@ function apiController($path, $request, $files = null) {
 			if($password1 != $password2){
 				jsonError(ERR_PASSWORD_UNMATCHED, "Passwords must match");
 			}
-			$newUser = array($email, $firstName, $lastName, $pass1);
-				
+			$newUser = array($email, $firstname, $lastname, $password1);
 			$result = $dao->registerUser($newUser);
 			if($result === REGISTRATION_EMAILEXISTS){
 				jsonError(ERR_EMAIL_INVALID, "Email already exists");
 			}
-			$smarty->assign('link', SERVER_BASE_URI."/verifyEmail?email=$email");
+			$smarty->assign('link', SERVER_BASE_URI."/web/verifyEmail?email=$email");
 			sendEmail($email, "email verification", $smarty->fetch("emails/new_user.tpl"));
 			jsonMessage(AUTHN_OK, "Registration Successful");
 
 			break;
 		case 'getDeltaFindsIds':
-			//			echo $dao->getDeltaFindsIds($deviceIdentifier);
-			echo $dao->getDeltaFindsIds($deviceIdentifier, $request["projectId"]);
+			echo $dao->getDeltaFindsIds($authKey, $request["projectId"]);
 			break;
 		case 'recordSync':
-			echo $dao->recordSync($deviceIdentifier);
+		        $projectId = -1;
+  		     	if($request["projectId"]){
+				$projectId = (int)$request["projectId"];
+			}		
+			echo $dao->recordSync($request["imei"], $authKey,$projectId);
+			//echo $dao->recordSync($deviceIdentifier, $authKey);
 			break;
 		case 'registerDevice':
 			$imei = $request["imei"];
@@ -127,9 +139,9 @@ function apiController($path, $request, $files = null) {
 			break;
 
 		case 'addExpeditionPoint':
-			echo $request["expeditionId"].",";
-			echo $dao->addExpeditionPoint($request["expeditionId"],$request["lat"],
-			$request["lng"], $request["alt"], $request["swath"]);
+			echo $request["expedition"].",";
+			echo $dao->addExpeditionPoint($request["expedition"],$request["latitude"],
+				$request["longitude"], $request["altitude"], $request["swath"], $request["time"]);
 			break;
 
 
@@ -148,6 +160,23 @@ function apiController($path, $request, $files = null) {
 			$result = $dao->getUserProjects($deviceUserId);
 			echo json_encode($result);
 			break;
+		case 'newProject':
+			extract($request);
+			if (!$name){
+				jsonError(ERR_NAME_INVALID, "Project name is invalid.");
+			}
+			$result = $dao->newProject($name, $description, $deviceUserId);
+
+			if (is_string($result))
+				jsonMessage(PROJ_CREATE_SUCCESS, "Project created successfully.");
+			else
+				jsonError(PROJ_CREATE_FAIL,"Project creation failed.");
+			break;
+		case 'projectExists':
+			if ($request["projectId"]){
+				echo $dao->projectExists($request["projectId"]);
+			}
+			break;
 		case 'listFinds':
 			echo json_encode($dao->getFinds($request["project_id"]));
 			break;
@@ -165,11 +194,12 @@ function apiController($path, $request, $files = null) {
 			$dao->deleteAllFinds($request["projectId"]);
 			break;
 		case 'createFind':
-			echo $dao->createFind($request["imei"], $request["guid"], $request["project_id"],
-			$request["name"], $request["description"], $request["latitude"], $request["longitude"], $request["revision"]);
+			echo $dao->createFind($authKey, $request["imei"], $request["guid"], $request["project_id"],
+			$request["name"], $request["description"], $request["latitude"], $request["longitude"], $request["revision"], $request["data"]);
 			break;
 		case 'updateFind':
-			echo $dao->updateFind($request["imei"],$request["guid"],$request["project_id"],$request["name"], $request["description"], $request["revision"]);
+			echo $dao->updateFind($authKey, $request["imei"],$request["guid"],$request["project_id"],$request["name"], $request["description"], 
+			$request["revision"],$request["data"], $request["latitude"], $request["longitude"]);
 			break;
 
 		case 'attachPicture':
@@ -177,7 +207,7 @@ function apiController($path, $request, $files = null) {
 			$imagethumbdata=base64_decode($request["data_thumbnail"]);
 
 			$result=$dao->addPictureToFind($request["imei"], $request["guid"], $request["identifier"], $request["project_id"],
-			$request["mime_type"], $request["timestamp"], $imagedata, $imagethumbdata);
+			$request["mime_type"], $request["timestamp"], $imagedata, $imagethumbdata, $authKey);
 			echo json_encode($result);
 			break;
 
