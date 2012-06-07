@@ -17,6 +17,8 @@
 * @license  http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License (LGPL)
 * @version
 */
+//required for unique sessions 
+session_name(md5(SERVER_BASE_URI));
 
 function checkAuthn() {
 	global $dao;
@@ -36,7 +38,18 @@ function isLoggedIn() {
 	return $_SESSION['loggedIn']? true: false;
 }
 
-function checkAuthz($action) {
+function checkAuthz($action, $queryString="") {
+	global $dao;
+	if ($queryString != "" && strstr($action, "project") &&  strstr($queryString, "id=")){
+			list($queryType, $queryValue) = explode("=", $queryString);
+			$authz = $dao->checkProjAuth($_SESSION['loginId'],$queryValue);	
+			if($authz){
+				return true;
+			}else{
+				return false;
+			}
+	}
+
 	$noAuth = array('login', 'login.do', 'logout', 'main', '', 'register', 'register.do');
 	if(in_array($action, $noAuth)) return true;
 	return isLoggedIn();

@@ -1,11 +1,14 @@
 <?php
 
 function webController($path, $request) {
-	global $smarty, $dao;
+	global $smarty, $dao, $error;
 	list($reqPath, $queryString) = explode('?', $path);
 	$pathParts = explode('/', substr($reqPath,1));
 	list($action) = $pathParts;
-	
+
+//	Log::getInstance()->log("Reached server");
+	Log::getInstance()->log("$path , $request");
+
 	session_start();
 	$authnStatus = checkAuthn(); 
 	
@@ -22,6 +25,7 @@ function webController($path, $request) {
 	$loginId = $_SESSION["loginId"];
 	if($loginId) {
 		$loginUser = $dao->getUser($loginId);
+		
 		if($loginUser["privileges"] == "admin")
 			$loginHasAdmin = true;
 		else
@@ -32,8 +36,17 @@ function webController($path, $request) {
 		$smarty->assign("loginHasAdmin", $loginHasAdmin);
 		
 		switch($action) {
+			case 'formbuilder.iframe':
+				$smarty->display('build.tpl');
+				break;
+			case 'formbuilder':
+				$smarty->display('formbuilder.tpl');				
+				break;
 			case 'main':
 				$smarty->display('main.tpl');
+				break;
+			case 'build':
+				$smarty->display('build.tpl');
 				break;
 			case '404':
 				$smarty->display('404.tpl');
@@ -85,9 +98,23 @@ function webController($path, $request) {
 				$_SESSION["loginEmail"] = $email;
 				header("Location: main");
 				break;
+			case 'admin.logs':
+				//var_dump($request);
+				$pageNum=$request["page"];
+				if(!$request["page"])
+					$pageNum=1;
+				$numPages=$dao->numLogPages();
+				$numArray = range(1,$numPages);
+				$logs=$dao->getLogs($pageNum);
+				$smarty->assign("numPages",$numPages);
+				$smarty->assign("pageNum",$pageNum);
+				$smarty->assign("numArray",$numArray);
+				$smarty->assign("logs",$logs);
+				$smarty->display("logs.tpl");
+				break;
 			case 'projects':
-//			        print_r($_SESSION);
-				$projects = $dao->getProjects();
+				$loginId = $_SESSION["loginId"];
+				$projects = $dao->getUserProjects($loginId);
 				$smarty->assign("projects", $projects);
 				$smarty->display("projects.tpl");
 				break;
@@ -104,50 +131,261 @@ function webController($path, $request) {
 				$smarty->display("expedition_tracker.tpl");
 				break;
 			case 'project.new':
+				$smarty->assign("error", $_SESSION["error"]);
+				$_SESSION["error"] = "";
 				$smarty->display("new_project.tpl");
 				break;
 			case 'project.new.do':
 				$name = $request["name"];
 				$description = $request["description"];
-				$dao->newProject($name, $description);
+				$loginId = $_SESSION["loginId"];
+				if ($name == ""){
+					$_SESSION["error"] = "Project name must be entered.";
+					header("Location: project.new");
+					break;
+				}else {
+					if (!validate_project_name($name)){
+						$_SESSION["error"] = "project name invalid.";
+						header("Location: project.new");
+						break;
+					}
+				}
+				if ($description != ""){
+					$description = 
+					$description = strip_tags($description , "<b>");
+				}
+				$dao->newProject($name, $description, $loginId);
 				header("Location: projects");
 				break;
-			case 'project.mapdisplay':
-				list($queryType, $queryValue) = explode("=", $queryString);
-				$id = $queryValue;
-				$project = $dao->getProject($id);
-				$smarty->assign("project", $project);
-				
-				$finds = $dao->getFinds($id);
-				$smarty->assign("finds", addslashes(json_encode($finds)));
-				$smarty->display("project_mapdisplay.tpl");
+			case 'project.share':
+				$loginId = $_SESSION["loginId"];
+				$projects = $dao->getOwnerProjects($loginId);
+				$smarty->assign("error", $_SESSION["error"]);
+				$_SESSION["error"] = "";
+				$smarty->assign("projects", $projects);
+				$smarty->display("share_project.tpl");
+				break;
+			case 'project.share.do':
+				$loginId = $_SESSION["loginId"];
+				if (!$request["email"]){
+					$_SESSION["error"] = "email required";
+					header("Location: project.share");
+					break;
+				}else {
+					if ($request["email"] == ""){
+						$_SESSION["error"] = "email required";
+						header("Location: project.share");
+						break;
+					}
+				}
+				if ($userId = $dao->getUserId($request["email"])){
+					$error = "Username doesn't exist";
+					header("Location: project.share");
+				}
+				$projectId = $request["projectId"];
+
+				//print_r("projectid: ".$projectId."userId:".$userId);
+				$projects = $dao->shareProject($loginId, $userId, $projectId);
+				header("Location: projects");
+				break;
+			case 'project.delete':
+				$project_id = $request["id"];
+				$project = $dao->getProject($project_id);
+				$smarty->assign("project",$project);
+				$smarty->display("delete_project.tpl");
+				break;
+			case 'find.delete':
+				$find_id = $request["id"];
+				$find = $dao->getFind($find_id);
+				$smarty->assign("find",$find);
+				$smarty->display("delete_find.tpl");
+				break;
+			case 'project.delete.do':
+				$project_id = $request["id"];
+				$dao->deleteProject($project_id);
+				header("Location: projects");
+				break;
+			case 'find.delete.do':
+				$find_id = $request["id"];
+				$find = $dao->getFind($find_id);
+				$location = "project.display?id=".$find["project_id"];
+				$dao->deleteFind($find_id);
+				header("Location: ".$location);
+				//THIS LINE WILL PROBABLY NEED TO BE CHNANGED TO SPECIFY THE PROJECT ID...
+			case 'project.showMap':
+				$project_id = $request["id"];
+				$project = $dao->getProject($project_id);
+				$smarty->assign("project",$project);
+				$finds = $dao->getFinds($project_id);
+				$expeditions = $dao->getExpeditions($project_id);
+				$expedition_points = array();
+				$expeditionKeys = array();
+			
+				//print_r($expeditions);
+				foreach($expeditions as $k=>$expedition){
+					$temp_points = $dao->getExpeditionPoints($expedition['id']);
+					if (count($temp_points) > 1) {
+						
+						$expedition_points[$k] = $temp_points;
+						$expeditionKeys[$k] = $expedition['id']; 
+					}
+					else{
+						unset($expeditions[$k]);
+
+					}
+					/*	echo "ACCEPTING expedition {$expedition['id']}:\n";
+						print_r($temp_points);
+						echo "\n\n"; 
+					} else {
+						
+						echo "REJECTING expedition {$expedition['id']}:\n";
+						print_r($temp_points);
+						echo "\n\n"; */ 
+					
+				}
+		//		print_r($expeditions);
+				if(count($expeditions)==0 && count($finds)!= 0){
+
+					$smarty->assign("expCheck", 0);
+					$smarty->assign("findCheck", 1);
+					$smarty->assign("finds", addslashes(json_encode($finds)));
+					$smarty->assign("expeds", json_encode($expeditionKeys));
+					$smarty->assign("expeditions", $expeditions);
+					$smarty->assign("expedition_points",json_encode($expedition_points));
+					$smarty->assign("expedition_points_decode",$expedition_points);
+					$extremes = $dao->getFindExtremes($project_id);
+					$smarty->assign('extremes',$extremes);
+					$geocenter = $dao->getGeocenter($extremes);
+					$smarty->assign('geocenter',$geocenter);
+					$colors = array("ff0000","ff8800","ffff00","99ff00","00ff00","337766","0000ff","9955ff","6600bb","ff0088");
+					$smarty->assign('colors',json_encode($colors));
+					$smarty->assign('colors_decode',$colors);
+					$smarty->display("project_dualdisplay_test.tpl");					
+				}
+				if(count($finds)==0 && count($expeditions)!= 0){
+					$smarty->assign("expCheck", 1);
+					$smarty->assign("findCheck", 0);
+					$smarty->assign("finds", addslashes(json_encode($finds)));
+					$smarty->assign("expeds", json_encode($expeditionKeys));
+					$smarty->assign("expeditions", $expeditions);
+					$smarty->assign("expedition_points",json_encode($expedition_points));
+					$smarty->assign("expedition_points_decode",$expedition_points);
+					$extremes = $dao->getExpExtremes($expeditions);
+					$smarty->assign('extremes',$extremes);
+					$geocenter = $dao->getGeocenter($extremes);
+					$smarty->assign('geocenter',$geocenter);
+					$colors = array("ff0000","ff8800","ffff00","99ff00","00ff00","337766","0000ff","9955ff","6600bb","ff0088");
+					$smarty->assign('colors',json_encode($colors));
+					$smarty->assign('colors_decode',$colors);
+					$smarty->display("project_dualdisplay_test.tpl");		
+				}
+				if(count($finds)== 0 && count($expeditions)== 0){
+					$smarty->display("empty_project.tpl");
+				}
+				if(count($finds)!= 0 && count($expeditions)!= 0){
+					$smarty->assign("expCheck", 1);
+					$smarty->assign("findCheck", 1);
+					$smarty->assign("finds", addslashes(json_encode($finds)));
+					$smarty->assign("expeds", json_encode($expeditionKeys));
+					$smarty->assign("expeditions", $expeditions);
+					$smarty->assign("expedition_points",json_encode($expedition_points));
+					$smarty->assign("expedition_points_decode",$expedition_points);
+					$find_extremes = $dao->getFindExtremes($project_id);
+					$exp_extremes = $dao->getExpExtremes($expeditions);
+					$extremes = $dao->getDualExtremes($exp_extremes,$find_extremes);
+					$smarty->assign('extremes',$extremes);
+					$geocenter = $dao->getGeocenter($extremes);
+					$smarty->assign('geocenter',$geocenter);
+					$colors = array("ff0000","ff8800","ffff00","99ff00","00ff00","337766","0000ff","9955ff","6600bb","ff0088");
+					$smarty->assign('colors',json_encode($colors));
+					$smarty->assign('colors_decode',$colors);
+					$smarty->display("project_dualdisplay_test.tpl");
+				}
 				break;
 			case 'project.display':
 				list($queryType, $queryValue) = explode("=", $queryString);
 				$id = $queryValue;
 				$project = $dao->getProject($id);
 				$smarty->assign("project", $project);
-				
 				$finds = $dao->getFinds($id);
 				$smarty->assign("finds", $finds);
 				$smarty->display("project_display.tpl");
 				break;
+			case 'advanced.search':
+				list($queryID, $querySearch) = explode("&", $queryString);
+				list($queryType, $queryValue) = explode("=", $queryID);
+				list($querySearchType, $querySearchFor) = explode("=", $querySearch);
+				$id = $queryValue;
+				$searchFor = str_replace("+", " ", $querySearchFor);
+				$project = $dao->getProject($id);
+				$smarty->assign("project", $project);
+				$finds = $dao->searchForFinds($id, $searchFor);
+				$smarty->assign("finds", $finds);
+				$smarty->assign("searchFor", $searchFor);
+				$smarty->display("advanced_search.tpl");
+				break;
+			case 'project.searchForFind':
+				list($queryID, $querySearch) = explode("&", $queryString);
+				list($queryType, $queryValue) = explode("=", $queryID);
+				list($querySearchType, $querySearchFor) = explode("=", $querySearch);
+				$id = $queryValue;
+				$searchFor = str_replace("+", " ", $querySearchFor);
+				$project = $dao->getProject($id);
+				$smarty->assign("project", $project);
+				$finds = $dao->searchForFinds($id, $searchFor);
+				$smarty->assign("finds", $finds);
+				$smarty->assign("searchFor", $searchFor);
+				$smarty->display("project_searchForFinds_display.tpl");
+				break;
+			case 'advanced.searchForFind':
+				list($queryID, $queryProject, $queryDescr) = explode("&", $queryString);
+				list($queryType, $queryValue) = explode("=", $queryID);
+				list($querySearchType, $querySearchProj) = explode("=", $queryProject);
+				list($queryDescription, $querySearchDescr) = explode("=", $queryDescr);
+				$id = $queryValue;
+				$searchFor = str_replace("+", " ", $querySearchProj);
+				$querySearchDescr = str_replace("+", " ", $querySearchDescr);
+				$project = $dao->getProject($id);
+				$smarty->assign("project", $project);
+				$finds = $dao->advancedSearchForFinds($id, $searchFor, $querySearchDescr);
+				$smarty->assign("descriptionVal", $querySearchDescr);
+				$smarty->assign("finds", $finds);
+				$smarty->assign("projectVal", $searchFor);
+				$smarty->display("advanced_searchForFinds_display.tpl");
+				break;
 			case 'find.display':
 				list($queryType, $queryValue) = explode("=", $queryString);
 				$id = $queryValue;
-				$find = $dao->getFind($id);
-//				$find = $dao->getFind($find["barcode_id"]);
+				$result = $dao->getFind($id);
+				$find = $result["find"];
+				$extension = $result["extension"];
+
+//				Log::getInstance()->log("find.display.Find = $find");
+//				Log::getInstance()->log("image = " . $result["img"]);
 				$project_id = $find["project_id"];
 				$project = $dao->getProject($project_id);;
 				
-				
+				$smarty->assign("extension",$extension);
+//				$smarty->assign("images",$result["images"]);
 //				$smarty->assign("images",$find["images"]);
+				$smarty->assign("images",$result["images"]);
+				$smarty->assign("img",$result["img"]);          // Display 1 image
 //				$smarty->assign("videos",$find["videos"]);
 //				$smarty->assign("audioClips",$find["audioClips"]);
 				$smarty->assign("project", $project);
 				$smarty->assign("find", $find);
 				$smarty->display("find_display.tpl");
-				break;				
+				break;
+			case 'project.export':
+				$project_id = $request["id"];
+				$project_name = $dao->formatProjectName($project_id);
+				$filename = $project_name . ".csv";
+				$writer = $dao->exportProject($project_id);
+				header('Content-Type: text/csv');
+				header("Content-Disposition: attachment; filename=$filename");
+				echo $writer;
+				break;
+		
 			case 'settings':
 				$userId = $_SESSION["loginId"];
 				$devices = $dao->getDevicesByUser($userId);

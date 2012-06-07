@@ -21,5 +21,11 @@ define(ERR_PASSWORD_UNMATCHED,		0x11);
 define(ERR_EMAIL_INVALID, 			0x12);
 define(ERR_PASSWORD_MISSING, 		0x13);
 define(ERR_IMEI_MISSING, 			0x14);
+define(ERR_NAME_INVALID, 			0x15);
+define(PROJ_CREATE_SUCCESS,         0x16);
+define(PROJ_CREATE_FAIL,			0x17);
+define(TITLE_INVALID,				0x18);
+define(FORM_OVERFLOW,				0x19);
+define(FORM_NAME_EXISTS,			0x20);
 
 ?>

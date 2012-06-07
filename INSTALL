@@ -1,11 +1,19 @@
 ==Installing Positweb==
 
-This guide assumes you have:
+For more detailed up-to-date instructions on installing on various platforms, see
+the following document:  
+
+    http://code.google.com/p/posit-mobile/wiki/PositWebDocs
+
+===Prerequisites===
+
+To install PositWeb server, you will need:
+
 - a webserver that supports URL rewriting; the standard Apache HTTPD is recommended
 - a MySQL database server
 
 1. Unpack the positweb archive somewhere in your server's document root.
-2. Set permissions so your server can write to the following folders:
+2. Set permissions so your server so you can write to the following folders:
 	positweb
 	positweb/cache
 	positweb/cache/compile
@@ -17,6 +25,7 @@ This guide assumes you have:
 
 3. Create a MySQL user to be used by positweb
 4. Create a MySQL database for positweb, which the user can access
-	You can complete these steps using a MySQL interface such as MySQL Query Browser or PhpMyAdmin.
+   	You can complete these steps using a MySQL interface such as MySQL Query Browser or PhpMyAdmin.
+        You can import the Db from ./setup/posit_x.sql
 5. In your web browser, browse to the URL corresponding to where you unpacked the positweb archive
-6. Follow the instructions on the webpage to complete the installation.
+6. Follow the instructions on the Positweb webpage to complete the installation.

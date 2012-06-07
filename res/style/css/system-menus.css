@@ -48,3 +48,19 @@ ul.links li {
   margin: 0;
   padding: 0 0 0.25em 1em; /* LTR */
 }
+
+#secondary-menu {
+	padding-bottom:5px;
+}
+
+#secondary-menu a {
+	background-color:#c9d0d9;
+	padding: 2px;
+	text-decoration: none;
+}
+#secondary-menu a:hover {
+	background-color:#fff;
+	padding: 2px;
+	text-decoration: none;
+}
+

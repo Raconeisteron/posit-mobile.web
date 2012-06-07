@@ -49,73 +49,265 @@ class DAO {
 		$this->db = dbConnect();
 	}
 	
-	/**
-	 *  returns a comma-delimited list of all finds since last sync for a given device
-	 *  @param unknown_type $imei the device's id
-	 */
-	 function getDeltaFindsIds($imei, $pid) {
-	 	Log::getInstance()->log("getDeltaFindsIds: $imei");
-		
-		// Get the timestamp of the last sync with this device
-		$stmt = $this->db->prepare(
-			"SELECT MAX(sync_history.time) FROM sync_history WHERE imei = :imei"); 
-		$stmt->bindValue(":imei", $imei);
-		$stmt->execute();
-		$result = $stmt->fetch(PDO::FETCH_NUM);
-		$time = $result[0];
-		Log::getInstance()->log("getDeltaFindsIds: Max Time = |$time|");
-                
-                //  If there is no MAX time, this is a new device, so get all Finds from other phones
+	 /**
+	  *  returns a comma-delimited list of all finds since last sync for a given device
+	  *  @param unknown_type $imei the device's id
+	  */
+	  function getDeltaFindsIds($auth_key, $pid) {
+      	      Log::getInstance()->log("getDeltaFindsIds: $auth_key");
+		      						 
+   	      // Get the timestamp of the last sync with this device
+							   
+	      if ($pid > -1){
+	   	 $stmt = $this->db->prepare(
+		       "SELECT MAX(sync_history.time) FROM sync_history WHERE sync_history.project_id = '$pid' AND auth_key = :auth_key"); 
+	       }else{
+ 	         $stmt = $this->db->prepare(
+     	               "SELECT MAX(sync_history.time) FROM sync_history WHERE sync_history.project_id = -1 AND auth_key = :auth_key"); 
+     	       }
+									      
+	       $stmt->bindValue(":auth_key", $auth_key);
+  	       $stmt->execute();
+ 	       $result = $stmt->fetch(PDO::FETCH_NUM);
+      	       //print_r($result);
+	       $time = $result[0];
+																				       	     
+	       Log::getInstance()->log("getDeltaFindsIds: Max Time = |$time| and PID = $pid");
+               
+                //  If there is no MAX time, this is a new device, so get all Finds -- i.e. some may have been
+                //   input from other phones
 
-//		if (strcmp($time,"") == 0) {
-		if ($time == NULL) {
-			Log::getInstance()->log("getDeltaFindsIds: IF time = $time");	
-//		        $res = mysql_query("SELECT DISTINCT find_guid FROM find_history WHERE imei != '$imei'") or die(mysql_error());  
-		        $res = mysql_query(
-			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE find_history.imei != '$imei' AND find.barcode_id=find_history.find_guid AND find.project_id = '$pid'") 
-			or die(mysql_error());  
+	        if ($time == NULL) {
+	     	       Log::getInstance()->log("getDeltaFindsIds: IF time = $time");	
+  		       $res = mysql_query(
+		       	 "SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE find_history.auth_key != '$auth_key' AND find.guid=find_history.find_guid AND find.project_id = '$pid' AND find.deleted=0" ) 
+	 	 	  or die(mysql_error());  
                 } else {
-			Log::getInstance()->log("getDeltaFindsIds: ELSE time = $time");	
-//       		        $res = mysql_query("SELECT DISTINCT find_guid FROM find_history WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0") or die(mysql_error());  
-       		        $res = mysql_query(
-			"SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0 AND find.barcode_id=find_history.find_guid AND find.project_id = '$pid'") 
-			or die(mysql_error());  
+		       Log::getInstance()->log("getDeltaFindsIds: ELSE time = $time");	
+ 		       $res = mysql_query(
+			  "SELECT DISTINCT find_history.find_guid FROM find_history,find WHERE TIMESTAMPDIFF(SECOND,'$time',time) > 0 AND find.guid=find_history.find_guid AND find.project_id = '$pid' AND find.deleted=0") 
+	 	 	  or die(mysql_error());  
                 }
 
-//SELECT DISTINCT find_history.find_guid FROM find_history, find WHERE find_history.imei != '351677030043731' AND find.barcode_id = find_history.find_guid AND find.project_id = 6
+//SELECT DISTINCT find_history.find_guid FROM find_history, find WHERE find_history.imei != '351677030043731' AND find.guid = find_history.find_guid AND find.project_id = 6
 
 
-		// Get a list of the Finds (guids) that have changed since the last update
+    	       // Get a list of the Finds (guids) that have changed since the last update
 
 		while ($row = mysql_fetch_row($res)) {
-			$list .= "$row[0],";
-		}    				
+		      $list .= "$row[0],";
+	        }
+		$this->createLog("I","getDeltaFindsIds",$list);					
 		Log::getInstance()->log("getDeltaFindsIds: $list");
 		return $list;
-	 }
-	
+	    }
+
+    /**
+     * records a record in the sync_history table
+     * @param unknown_type $imei
+     */
+     function recordSync($imei, $authKey, $projectId) {
+ 	 Log::getInstance()->log("recordSync"."Imei:".$imei. "Authkey:".$authKey. "Projectid:".$projectId);
+										 						  
+         if ($projectId > -1){
+ 	    $stmt = $this->db->prepare(
+	      	   "INSERT INTO sync_history (imei, auth_key, project_id) VALUES (:imei,:authkey,:projectid)"
+   	    ); 
+	    $stmt->bindValue(":projectid", $projectId);
+	  }else{
+	     $stmt = $this->db->prepare(
+		"INSERT INTO sync_history (imei, auth_key) VALUES (:imei,:authkey)"
+	     ); 	       
+          }
+          $stmt->bindValue(":imei", $imei);
+          $stmt->bindValue(":authkey", $authKey);
+          $stmt->execute();
+          $lastid = $this->db->lastInsertId();
+	  $this->createLog("I","lastInsertId","Last id = ".$lastid);
+	  return $lastid;
+     }
+
+
 	/**
-	 * records a record in the sync_history table
-	 * @param unknown_type $imei
+	 * Renames expedition and returns a boolean based on the success of the query
+	 * @param $expId
+	 * @param $new
+	 * @return Boolean Successs
 	 */
-	 function recordSync($imei) {
-		Log::getInstance()->log("recordSycn: $imei");
-		$stmt = $this->db->prepare(
-			"INSERT INTO sync_history (imei) VALUES (:imei)"
-		); 
-		$stmt->bindValue(":imei", $imei);
+	function renameExpedition($expId, $newName){
+		$query = sprintf("UPDATE expedition SET name='%s' where id='%s'",
+		mysql_real_escape_string($newName),
+		mysql_real_escape_string($expId));
+		$stmt = $this->db->prepare($query);
 		$stmt->execute();
-		$lastid = $this->db->lastInsertId();
-		Log::getInstance()->log("lastInsertId()=$lastid");
-		return $lastid;
+		
+	}
+	 
+	 /**
+	  * Creates a new entry in the form database for using the title, userId and form data
+	  * @param $formData, $title, $userId
+	  */
+	 function newForm($title, $userId, $formData,$xml){
+	 	$query = sprintf("INSERT INTO forms (title, user_id, form, xml) VALUES('%s', '%s', '%s', '%s')",
+	 	mysql_real_escape_string($title),
+	 	mysql_real_escape_string($userId),
+	 	mysql_real_escape_string($formData),
+	 	/*
+	 	 * this is because the colon used in the namespace identifier gets escaped by the command
+	 	 * using something like {colon} makes it all to obvious
+	 	 */
+	 	mysql_real_escape_string(str_replace(":", "{colon}",$xml))); 
+	 	$stmt = $this->db->prepare($query);	 	
+	 	$stmt->execute();
+	 }
+
+	 /**
+	  * Updates the form that has the given title and user id using the form data.
+	  * @param $title
+	  * @param $userId
+	  * @param $formData
+	  */
+	 function updateForm($title, $userId, $formData, $xml){
+	 	$query = sprintf("UPDATE forms SET  form = '%s' WHERE user_id = '%s' and title = '%s' and xml = '%s'",
+	 	mysql_real_escape_string($formData),
+	 	mysql_real_escape_string($userId),
+	 	mysql_real_escape_string($title),
+	 	/*
+	 	 * this is because the colon used in the namespace identifier gets escaped by the command
+	 	 * using something like {colon} makes it all to obvious
+	 	 */
+	 	mysql_real_escape_string(str_replace(":", "{colon}",$xml)));
+	 	$stmt = $this->db->prepare($query);	 	
+	 	$stmt->execute();
+	 }
+
+	 /**
+	  * Returns form xml data associated with form id.
+	  * @param $formId
+	  * @return Associative Array
+	  */
+	 function loadFormXml($id){
+	 	$query = sprintf("SELECT xml FROM `forms` WHERE id = '%s'", 
+	 	mysql_real_escape_string($id));
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	$return = $stmt->fetch(PDO::FETCH_NUM);
+	 	/*
+	 	 * replace back the colon character that was escaped before
+	 	 */
+	 	return str_replace( "{colon}", ":",$return[0]);
 	 }
 	 
+	 /**
+	  * Returns form data associated with title and user id.
+	  * @param $userId
+	  * @param $title
+	  * @return Associative Array
+	  */
+	 function loadForm($userId, $title){
+	 	$query = sprintf("SELECT form FROM `forms` WHERE user_id = '%s' and title = '%s'", 
+	 	mysql_real_escape_string($userId),
+	 	mysql_real_escape_string($title));
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	$return = $stmt->fetch(PDO::FETCH_NUM);
+	 	return $return[0];
+	 }
+	 
+ /**
+	  * Returns all rows in the forms table associated with the user id
+	  * @param $userId
+	  * @return Associative Array
+	  */
+	 function listForms($userId){
+	 	$query = sprintf("SELECT title FROM forms where user_id='%s'", mysql_real_escape_string($userId));
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+	 }
+	 /*
+	  * List all forms 
+	  * USE ONLY IN ODK --- DEMO PURPOSES ONLY -Prasanna
+	  */
+	 function listAllForms (){
+	 	$query = "SELECT id,title FROM forms";
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	return $stmt->fetchAll(PDO::FETCH_ASSOC);
+	 }
+	 
+	 /**
+	  * Checks if the form name already exists for the user. Returns true if it does and false if it does not.
+	  * @param $title
+	  * @param $userId
+	  * @return Boolean
+	  */
+	 function checkFormName($title, $userId){
+	 	$query = sprintf("SELECT * FROM `forms` WHERE user_id = '%s' and title = '%s'", 
+	 	mysql_real_escape_string($userId),
+	 	mysql_real_escape_string($title));
+	 	$stmt = $this->db->prepare($query);
+	 	$stmt->execute();
+	 	$result=$stmt->fetch(PDO::FETCH_NUM);
+	 	if(!isset($result[0]))
+	 		return false;
+	 	return true; 
+	 }
+	 /**
+	  * Deletes the form associated with the title and user id.
+	  * @param $title
+	  * @param $userId
+	  * @return n/a
+	  */
+	 function deleteForm($title, $userId){
+	 	$query = sprintf("DELETE FROM `forms` WHERE title = '%s' and user_id = '%s'", 
+	 	mysql_real_escape_string($title),
+	 	mysql_real_escape_string($userId));
+	 }
+	 /**
+	  * Returns all rows in the forms table associated with the user id
+	  * @param $userId
+	  * @return Associative Array
+	  */
+	 function createLog($type,$tag,$message){
+	 	/*$stmt=$this->db->prepare("INSERT INTO logs (type,tag,message) VALUES(:type,:tag,:message)");
+	 	
+	 	
+	 	$stmt->bindValue(":type",$type);
+	 	$stmt->bindValue(":tag",$tag);
+	 	$stmt->bindValue(":message",$message);
+	 	
+	 	$stmt->execute();*/
+	 }
+	 	 /**
+	 * Returns the logs for the selected page number
+	 */
+	 function numLogPages(){
+	 	$stmt=$this->db->prepare("SELECT COUNT(id) from logs");
+	 	$stmt->execute();
+	 	$result=$stmt->fetch(PDO::FETCH_NUM);
+		$numPages=ceil($result[0]/30);
+	 	return $numPages;
+	 }
+	 /**
+	 * Returns the logs for the selected page number
+	 */
+	 function getLogs($pageNumber){
+		$minPage=($pageNumber-1)*30;
+		$maxPage=30;
+		$stmt=$this->db->prepare("SELECT * FROM logs LIMIT :minPage,:maxPage");
+	 	$stmt->bindValue(":minPage",$minPage);
+	 	$stmt->bindValue(":maxPage",$maxPage);
+	 	$stmt->execute();
+	 	$result=$stmt->fetchAll(PDO::FETCH_ASSOC);
+	 	return $result;
+	 }
 	/**
 	 * get user from the user ID
 	 * @param unknown_type $userId
 	 */
 	function getUser($userId) {
-		Log::getInstance()->log("getUser: $userId");
+		$this->createLog("I","getUser","$userId");
 
 		$stmt = $this->db->prepare(
 			"SELECT email, first_name, last_name, privileges, create_time FROM user WHERE id = :userId"
@@ -126,16 +318,36 @@ class DAO {
 		
 		return $stmt->fetch(PDO::FETCH_ASSOC);
 	}
+	
+	/**
+	 * get userID from the email
+	 * @param unknown_type $email
+	 */
+	function getUserId($email) {
+
+		$stmt = $this->db->prepare(
+			"SELECT id FROM user WHERE email = :email"
+		);
+		
+		$stmt->bindValue(":email", $email);
+		if ($stmt->execute()){;
+		
+			$result = $stmt->fetch(PDO::FETCH_ASSOC);
+			return $result["id"];
+		}else {
+			return false;
+		}
+
+	}
 	/**
 	 * creates a new project
 	 * @param unknown_type $name
 	 * @param unknown_type $description
 	 */
-	function newProject($name, $description) {
-		Log::getInstance()->log("newProject: $name, $description");
+	function newProject($name, $description, $userId) {
+		$this->createLog("I","New Project","Name:".$name." Description:".$description."User ID: ".$userId);		
 
 		$name = addslashes($name);
-		Log::getInstance()->log($description);
 		$description = addslashes($description);
 		$stmt = $this->db->prepare(
 			"INSERT INTO project (name, description) VALUES (:name, :description)"
@@ -144,11 +356,44 @@ class DAO {
 		$stmt->bindValue(":name", $name);
 		$stmt->bindValue(":description", $description);
 		
-		
 		$stmt->execute();
 		
+		$result = $stmt->fetch(PDO::FETCH_ASSOC);
+		
+		$lastId = $this->db->lastInsertId();
+		
+		$stmt = $this->db->prepare(
+			"INSERT INTO user_project (user_id, project_id, role)
+				VALUES (:userId, :projectId, 'owner')"
+		); 
+		
+		$stmt->bindValue(":userId", $userId);
+		$stmt->bindValue(":projectId", $lastId);
+		
+		$stmt->execute() or print_r($stmt->errorInfo()) && die();
+
+		return "Project with ID " . $lastId . "inserted successfully.";
+		//die("[Error " .__FILE__." at ".__LINE__."] ". $this->db->errorInfo());
 		/*$stmt = $this->db->prepare("INSERT INTO project (name) VALUES ('$name')");*/
 		
+	}
+	
+	/**
+	 * Create a new project from the phone using the auth key
+	 * @param unknown_type $userId
+	 */
+	function newProjectFromPhone($name, $description, $authKey) {
+		
+		$stmt = $this->db->prepare(
+			"SELECT user_id FROM device WHERE auth_key = :authKey"
+		); 
+		
+		$stmt->bindValue(":authKey", $authKey);
+		$stmt->execute();
+		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+		if(is_array($result))
+			$this->newProject($name, $description, $result[0]["user_id"]);
 	}
 	/**
 	 * gets an associative array of all the projects that are accessible to the entity
@@ -158,11 +403,11 @@ class DAO {
 		Log::getInstance()->log("getProjects: $permissionType");
 
 		if($permissionType == PROJECTS_OPEN)
-			$whereClause = "where permission_type = 'open'";
+			$whereClause = "where permission_type = 'open' and deleted=0";
 		else if($permissionType == PROJECTS_CLOSED)
-			$whereClause = "where permission_type = 'closed'";
+			$whereClause = "where permission_type = 'closed' and deleted=0";
 		else
-			$whereClause = "";
+			$whereClause = "where deleted=0";
 			
 		$stmt = $this->db->prepare(
 			"select id, name, description, create_time, permission_type
@@ -171,21 +416,26 @@ class DAO {
 //		$stmt->execute();
 		$stmt->execute() or die("[Error MySQl on ".__FILE__."at ".__LINE__."]" . mysql_error());
 		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-		Log::getInstance()->log("getProjects: $result");
+		$this->createLog("I","getProjects"," $result");
 
 		return $result;
 	}
 	/**
-	 * get the projects accessible to the user
+	 * Get the projects accessible to the user, whether or not
+	 * they are the owner
 	 * @param unknown_type $userId
 	 */
 	function getUserProjects($userId) {
-	    Log::getInstance()->log("getUserProjects: $userId");
+	    $this->createLog("I","getUserProjects"," $userId");
 
 		$stmt = $this->db->prepare(
-			"select project_id from user_project 
-			 where user_id = :userId"
-		);
+			"SELECT project.name, project.id, project.description, user_project.role
+			 FROM project 
+			 JOIN user_project
+			 ON project.id = user_project.project_id 
+			 AND user_project.user_id = :userId
+			 WHERE deleted=0"
+			);
 		
 		$stmt->bindValue(":userId", $userId);
 		$stmt->execute();
@@ -193,40 +443,84 @@ class DAO {
 		
 		return $result;
 	}
+	
+	/**
+	 * Get projects where the user specified is the owner.
+	 * @param unknown_type $ownerId
+	 */
+	function getOwnerProjects($ownerId) {
+		$stmt = $this->db->prepare(
+			"SELECT project.name, project.id, project.description
+			 FROM project 
+			 JOIN user_project
+			 ON project.id = user_project.project_id 
+			 AND user_project.user_id = :ownerId AND user_project.role = 'owner'
+			 WHERE deleted=0"
+		);
+		
+		$stmt->bindValue(":ownerId", $ownerId);
+		$stmt->execute();
+		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		
+		return $result;	
+	}
+	/**
+	 * Gives a user access to a project
+	 * @param unknown_type $userId
+	 */
+	function shareProject($ownerId, $userId, $projectId) {
+		$stmt = $this->db->prepare(
+			"select user_id from user_project 
+			 WHERE role = 'owner' AND project_id = :projectId 
+			 AND user_id = :userId"
+		);
+		$stmt->bindValue(":projectId", $projectId);
+		$stmt->bindValue(":userId", $userId);
+		$stmt->execute();
+		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		
+		if (is_array($result)) {
+			$stmt = $this->db->prepare(
+			"INSERT INTO user_project (user_id, project_id, role)
+				VALUES (:userId, :projectId, 'user')"
+			);
+			$stmt->bindValue(":projectId", $projectId);
+			$stmt->bindValue(":userId", $userId);
+			$stmt->execute();
+		}
+	}
 	/**
 	 * get all the finds for a project
 	 * @param unknown_type $projectId
 	 */
-	function getFinds($projectId) {
-		Log::getInstance()->log("getFinds: $projectId");
-
-		$stmt = $this->db->prepare("select id, barcode_id, name, description, add_time, modify_time,
-			latitude, longitude, revision from find where project_id = :projectId"
+	function getFinds($projectId, $lastTime = null) {
+		Log::getInstance()->log("getFinds, projectId = $projectId");
+		if($lastTime != null){
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+			latitude, longitude, revision from find where add_time > :lastTime
+			 and project_id = :projectId and deleted=0 order by add_time"
 		);	
+		$stmt->bindValue(":lastTime", $lastTime);
+		}else{
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+				latitude, longitude, revision from find where project_id = :projectId and deleted=0 order by add_time"
+			);	
+		}
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		$result = array();
 		
 		foreach ($temp as $find) {
-//		echo "Find = " . $find["barcode_id"] . "<BR>";
-//			$stmt = $this->db->prepare("select id from photo where find_id = :id");
-			$stmt = $this->db->prepare("select imei, data_thumb from photo where guid = :id");
-//			$stmt->bindValue(":id", $find["id"]);
-			$stmt->bindValue(":id", $find["barcode_id"]);
+			$stmt =  $this->db->prepare("select id from photo where guid = :id");
+			$stmt->bindValue(":id", $find["guid"]);
 			$stmt->execute();
 			$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			
-			$find["blah"] = "blah blah blah";
 			$find["images"] = array();
 			
-			foreach($imageResult as $image) {
-				$img = "data:image/jpeg;base64," . base64_encode($image["data_thumb"]);
-				$find["img"] = $img;
-//                        echo "<img src=" . $img . ">";
-//				$find["images"][] = $image["id"];
-				$find["images"][] = $image["guid"];
-			}
+			foreach($imageResult as $image) 
+				$find["images"][] = $image["id"];
 
 			$stmt = $this->db->prepare("select id from video where find_id = :id");
 			$stmt->bindValue(":id", $find["id"]);
@@ -256,56 +550,188 @@ class DAO {
 		return $result;
 	}
 	/**
+	 * get all the finds for a project that meet the search criteria for the project name
+	 * @param unknown_type $projectId
+	 */
+	function searchForFinds($projectId, $searchFor, $lastTime = null) {
+		Log::getInstance()->log("getFinds, projectId = $projectId");
+		if($lastTime != null){
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+			latitude, longitude, revision from find where add_time > :lastTime
+			 and project_id = :projectId and name like :searchFor and deleted=0 order by add_time"
+		);	
+		$stmt->bindValue(":lastTime", $lastTime);
+		}else{
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+				latitude, longitude, revision from find where project_id = :projectId and name like :searchFor and deleted=0 order by add_time"
+			);	
+		}
+		$stmt->bindValue(":projectId", $projectId);
+		$stmt->bindValue(":searchFor", "%" . $searchFor . "%");
+/**		$stmt->bindValue(":searchFor", "%e%");*/
+		$stmt->execute();
+		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$result = array();
+		
+		foreach ($temp as $find) {
+			$stmt =  $this->db->prepare("select id from photo where guid = :id");
+			$stmt->bindValue(":id", $find["guid"]);
+			$stmt->execute();
+			$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["images"] = array();
+			
+			foreach($imageResult as $image) 
+				$find["images"][] = $image["id"];
+
+			$stmt = $this->db->prepare("select id from video where find_id = :id");
+			$stmt->bindValue(":id", $find["id"]);
+			$stmt->execute();
+			$videoResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["videos"] = array();
+			
+			foreach($videoResult as $video) {
+				$find["videos"][] = $video["id"];
+			}
+			
+			$stmt = $this->db->prepare("select id from audio where find_id= :id");
+			$stmt->bindValue(":id", $find["id"]);
+			$stmt->execute();
+			$audioResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["audioClips"] = array();
+			
+			foreach($audioResult as $audio) {
+				$find["audioClips"][] = $audio["id"];
+			}
+			
+			$result[] = $find;
+		}
+
+		return $result;
+	}
+	/**
+	 * get all the finds for a project that meet the search criteria for the project name and description
+	 * @param unknown_type $projectId
+	 */
+	function advancedSearchForFinds($projectId, $searchFor, $descr, $lastTime = null) {
+		Log::getInstance()->log("getFinds, projectId = $projectId");
+		if($lastTime != null){
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+			latitude, longitude, revision from find where add_time > :lastTime
+			 and project_id = :projectId and name like :searchFor and description like :descr and deleted=0 order by add_time"
+		);	
+		$stmt->bindValue(":lastTime", $lastTime);
+		}else{
+			$stmt = $this->db->prepare("select id, guid, name, description, add_time, modify_time,
+				latitude, longitude, revision from find where project_id = :projectId and name like :searchFor and description like :descr and deleted=0 order by add_time"
+			);	
+		}
+		$stmt->bindValue(":projectId", $projectId);
+		$stmt->bindValue(":searchFor", "%" . $searchFor . "%");
+		$stmt->bindValue(":descr", "%" . $descr . "%");
+/**		$stmt->bindValue(":searchFor", "%e%");*/
+		$stmt->execute();
+		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$result = array();
+		
+		foreach ($temp as $find) {
+			$stmt =  $this->db->prepare("select id from photo where guid = :id");
+			$stmt->bindValue(":id", $find["guid"]);
+			$stmt->execute();
+			$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["images"] = array();
+			
+			foreach($imageResult as $image) 
+				$find["images"][] = $image["id"];
+
+			$stmt = $this->db->prepare("select id from video where find_id = :id");
+			$stmt->bindValue(":id", $find["id"]);
+			$stmt->execute();
+			$videoResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["videos"] = array();
+			
+			foreach($videoResult as $video) {
+				$find["videos"][] = $video["id"];
+			}
+			
+			$stmt = $this->db->prepare("select id from audio where find_id= :id");
+			$stmt->bindValue(":id", $find["id"]);
+			$stmt->execute();
+			$audioResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+			
+			$find["audioClips"] = array();
+			
+			foreach($audioResult as $audio) {
+				$find["audioClips"][] = $audio["id"];
+			}
+			
+			$result[] = $find;
+		}
+
+		return $result;
+	}
+
+	/**
 	 * get a specific find
 	 * @param unknown_type $id
 	 */
 	function getFind($guid) {
-		Log::getInstance()->log("getFind: $guid");
+		Log::getInstance()->log("getFind: guid = $guid");
 
-//		$stmt = $this->db->prepare("select id, project_id, barcode_id, name, description, add_time, modify_time, 
-//			latitude, longitude, revision from find where id = :id");
-		$stmt = $this->db->prepare("select project_id, barcode_id, name, description, add_time, modify_time, 
-			latitude, longitude, revision from find where barcode_id = :guid");		
+		$stmt = $this->db->prepare("select project_id, guid, name, description, add_time, modify_time, 
+			latitude, longitude, revision from find where guid = :guid");		
 		$stmt->bindValue(":guid", $guid);
 		$stmt->execute();
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		
 /********* Try to return the thumbnail
-		$stmt = $this->db->prepare("select imei, data_thumb from photo where guid = :id");
+		$stmt = $this->db->prepare("select imei, data_full from photo where guid = :id");
 		$stmt->bindValue(":id", $guid);
 		$stmt->execute();
 		$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			
 		$find["images"] = array();
 		foreach($imageResult as $image) {
-			$img = "data:image/jpeg;base64," . base64_encode($image["data_thumb"]);
-			$find["img"] = $img;
-			$find["images"][] = $image["guid"];
+                        $img = "data:image/jpeg;base64," . base64_encode($image["data_thumb"]);
+                        $find["img"] = $img;
+                        $find["images"][] = $image["guid"];
 		}
 		
 **************/
-		
 /*********
 		foreach ($temp[0] as $key=>$value) {
-			Log::getInstance()->log("getFind temp: $key = $value");
+			$this->createLog("I","getFind temp: $key = $value");
 		}    				
 ***************/
-		$result = array();
-		$result[0]= $temp[0];
-		Log::getInstance()->log("getFind length of record: " . count($result[0]));
 
+		$result = array();
+		$result[0]["find"]= $temp[0];
+//		$this->createLog("I","getFind length of record"," " . count($result[0]));
+
+		// Get this Find's images
+                //
 		$result[0]["images"] = array();
-		
-//		$stmt = $this->db->prepare("select id from photo where find_id = :id");
-//		$stmt->bindValue(":id", $id);
 		$stmt = $this->db->prepare("select id from photo where guid = :id");
+//		$stmt = $this->db->prepare("select data_full from photo where guid = :id");
 		$stmt->bindValue(":id", $guid);
 		$stmt->execute();
 		$imageResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+		
+		// Currently only 1 image can be displayed on the phone.  So this will display the 
+		//  last image. 
+		// TODO:  Upgrade to store multiple images per find.
 		foreach($imageResult as $image) {
+//			$result[0]["img"] = "data:image/jpeg;base64," .  base64_encode($image["data_full"]);
+//			$result[0]["images"][] = "data:image/jpeg;base64," .  base64_encode($image["data_full"]);
 			$result[0]["images"][] = $image["id"];
 		}
+//		Log::getInstance()->log("getFind: number of images = " . count($result[0]["images"])   . " " . $result[0]["images"][0]);
+//		Log::getInstance()->log("getFind: image = " . $result[0]["img"]);
 		
 /************
 		$result[0]["audios"] = array();
@@ -328,6 +754,28 @@ class DAO {
 			$result[0]["videos"][] = $video["id"];
 		}
 *********************/
+
+		$stmt = $this->db->prepare("select id from find where guid = :id");
+		$stmt->bindValue(":id",$guid);
+		$stmt->execute();
+		$idResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$id = $idResult[0]["id"];
+
+		$stmt = $this->db->prepare("select data from find_extension where find_id = :id");
+		$stmt->bindValue(":id", $id);
+		$stmt->execute();
+		$extensionResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$result[0]["extension"]=$extensionResult[0]["data"];
+		$xdata = $result[0]["extension"];
+		Log::getInstance()->log("getFind: extra data = $xdata");
+
+//		foreach($imageResult as $image) {
+//			$result[0]["images"][] = $image["id"];
+//		}
+
+//		Log::getInstance()->log("getFind: image =" .  $result[0]["img"]);
+		Log::getInstance()->log("getFind: number of images =" .  count($result[0]["images"]));
+
 		return $result[0];
 	
 	}
@@ -336,10 +784,10 @@ class DAO {
 	 * @param $id
 	 */
 	function getProject($id) {
-		Log::getInstance()->log("getProject: $id");
+		$this->createLog("I","getProject"," $id");
 
 		$stmt = $this->db->prepare(
-			"select id, name, create_time, permission_type
+			"select id, name, create_time, permission_type, deleted
 			 from project where id = :id");
 		
 		$stmt->bindValue(":id", $id);	
@@ -366,7 +814,7 @@ class DAO {
 	 * @param unknown_type $pictureId
 	 */
 	function getPicture($pictureId){
-		Log::getInstance()->log("getPicture: $pictureId");
+		$this->createLog("I","getPicture"," $pictureId");
 
 		$stmt = $this->db->prepare(
 			"select id,guid,mime_type,data_full,data_thumb from photo
@@ -383,7 +831,7 @@ class DAO {
 	 * @param unknown_type $findId
 	 */
 	function getPicturesByFind($guid){
-		Log::getInstance()->log("getPicturesByFind: $guid");
+		$this->createLog("I","getPicturesByFind"," $guid");
 		$stmt = $this->db->prepare(
 			"select guid,mime_type,data_full,data_thumb, project_id, identifier from photo
 			where guid = :guid"
@@ -439,14 +887,18 @@ class DAO {
 		else
 			return false;
 	}
+	
 	/**
 	 * delete a find
 	 * @param unknown_type $findId
+	 * THIS FUNCTION WILL BE COMMENTED OUT TEMPORARILY IN FAVOR OF ITS DUPLICATE
 	 */
+	 
+	 /*
 	function deleteFind($findId) {
 		Log::getInstance()->log("deleteFind: $findId");
 
-		$stmt = $this->db->prepare("delete from find where barcode_id = :findId");
+		$stmt = $this->db->prepare("delete from find where guid = :findId");
 		$stmt->bindvalue(":findId", $findId);
 		$stmt->execute();
 		$this->deleteImages($findId);
@@ -464,43 +916,196 @@ class DAO {
 		$lastid = $this->db->lastInsertId();
 		Log::getInstance()->log("Updated find_history, lastInsertId()=$lastid");
 	}
+	*/
+	
+/**
+ * Creates a new expedition associated with the projectId.
+ * @param $projectId
+ * @return unknown_type
+ */
 	
 	function addExpedition($projectId){
 		$stmt = $this->db->prepare("INSERT INTO expedition ( project_id ) VALUES (:projectId)");
 		$stmt->bindValue(":projectId", $projectId);
-//		$stmt->bindValue(":userId", $userid);
 		$stmt->execute();
 		return $this->db->lastInsertId();
 	}
 	
-	function addExpeditionPoint($expeditionId, $latitude, $longitude, $altitude, $swath){
-		$stmt = $this->db->prepare("INSERT INTO gps_sample ( expedition_id, latitude, longitude , altitude, swath, sample_time)" 
-		."VALUES (:expeditionId, :latitude, :longitude, :altitude, :swath, now() )");
+	/**
+	 * Adds the expedion point data and associates it with the provided expedition id
+	 * @param $expeditionId
+	 * @param $latitude
+	 * @param $longitude
+	 * @param $altitude
+	 * @param $swath
+	 * @return unknown_type
+	 */
+	
+	function addExpeditionPoint($expeditionId, $latitude, $longitude, $altitude, $swath, $time){
+		Log::getInstance()->log("addExpeditionPoint, expId=$expeditionId, lat=$latitude,long=$longitude,alt=$altitude,swath=$swath,t=$time");
+		$stmt = $this->db->prepare("INSERT INTO gps_sample ( expedition_id, latitude, longitude , altitude, swath, time, sample_time)" 
+		."VALUES (:expeditionId, :latitude, :longitude, :altitude, :swath, :time, now() )");
 		$stmt->bindValue(":expeditionId", $expeditionId);
 		$stmt->bindValue(":latitude", $latitude);
 		$stmt->bindValue(":longitude", $longitude);
 		$stmt->bindValue(":altitude", $altitude);
 		$stmt->bindValue(":swath", $swath);
+		$stmt->bindValue(":time", $time);
 		$stmt->execute();
 		return $this->db->lastInsertId();
 		//return $stmt->execute() > 0;
 	}
 	
 	function getExpeditions($projectId){
-		Log::getInstance()->log("getExpeditions: $projectId");
+		
+		Log::getInstance()->log("getExpeditions, projectId = $projectId");
+//		$this->createLog("I","getExpeditions"," $projectId");
 		$stmt = $this->db->prepare("SELECT id, name, description, project_id FROM expedition WHERE project_id= :projectId ");
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->execute();
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		return $temp;
 	}
+	/**
+	 * Returns the most recent time associated with the expedition id from the gps_sample table.
+	 * @param $expId
+	 * @return $lastUpdate
+	 */
+	function getLastUpdate($expId){
+		$query =  sprintf("SELECT MAX(sample_time) FROM gps_sample where expedition_id = %s",
+		$expId);
+		$stmt = $this->db->prepare($query);
+		$stmt->execute();
+		$lastUpdate = $stmt->fetch();
+		return $lastUpdate[0];
+	}
 	
+	function getLastFindTime($projId){
+		$query =  sprintf("SELECT MAX(add_time) FROM find where project_id = %s",
+		$projId);
+		$stmt = $this->db->prepare($query);
+		$stmt->execute();
+		$lastUpdate = $stmt->fetch();
+		return $lastUpdate[0];
+	}
+	/**
+	 * Returns all points in an expedition beyond the specified time
+	 * @param $expId
+	 * @param $expTime
+	 * @return unknown_type
+	 */
+	
+	function getNewPoints($expId, $expTime){
+		$query = sprintf("SELECT DISTINCT latitude, longitude, altitude, expedition_id 
+		FROM `gps_sample` WHERE expedition_id = '%s' and sample_time > '%s'",
+		$expId,
+		$expTime);
+		$stmt = $this->db->prepare($query);
+		$stmt->execute();
+		$newPoints = $stmt->fetchAll();
+		return $newPoints;
+	}
+	
+	/**
+	 * Returns an associated array with the points that have the provided expedition id.
+	 * @param $expeditionId
+	 * @return unknown_type
+	 */
 	function getExpeditionPoints($expeditionId){
-		$stmt = $this->db->prepare("SELECT latitude, longitude, altitude, expedition_id FROM gps_sample WHERE expedition_id= :expeditionId ");
+		$stmt = $this->db->prepare("
+		SELECT DISTINCT
+			latitude, longitude
+		FROM gps_sample
+		WHERE expedition_id= :expeditionId
+                ORDER BY time
+		"
+		);
 		$stmt->bindValue(":expeditionId", $expeditionId);
 		$stmt->execute();
 		$temp = $stmt->fetchAll(PDO::FETCH_ASSOC);
 		return $temp;
+	}
+	
+	/*
+	 * Checks an array to prevent against SQL-injection.
+	 * Then implodes the array using a comma as a delimter.
+	 * @param $arrayOfInt an array
+	 * @return $result a string containing each entry of $arrayOfInt
+	 * 		casted to (int) and imploded using a comma as a delimiter  
+	 */
+	function checkAndImplode($arrayOfInt) {
+		$result = "";
+		foreach ($arrayOfInt as $entry) {
+			$entry = (int) $entry;
+			$result .= $entry . ",";
+		}
+		$result = rtrim($result, ",");
+		return $result;
+	}
+	
+	/* finds northernmost, southernmost, easternmost, and westernmost extremes
+	 * among gps_samples from an array of expedition id's
+	 * @param $expeditionIds an array of expedition id's
+	 * @return an array containing the extremes in the order north-south-east-west
+	 */
+	function getExpExtremes($expeditions) {
+		$id_array = array();
+		foreach ($expeditions as $exp) {
+			$id_array[] = $exp['id'];
+		}
+		$expeditionIdString = $this->checkAndImplode($id_array); 
+		$stmt = $this->db->prepare ("
+		SELECT max(latitude) north, min(latitude) south, max(longitude) east, min(longitude) west, count(*) num_rows 
+		FROM gps_sample
+		WHERE expedition_id
+		IN ($expeditionIdString)
+		");
+		$stmt->execute();
+		$row=$stmt->fetch(PDO::FETCH_ASSOC);
+		extract($row);
+		return array('north' => $north,'south' => $south,'east' => $east,'west' => $west);
+	}
+	
+	/* finds northernmost, southernmost, easternmost, and westernmost extremes
+	 * among the finds associated with a given project
+	 * @param $projectId the id of the project of interest
+	 * @return an array containing the extremes in the order north-south-east-west
+	 */
+	function getFindExtremes($projectId) {
+		$stmt = $this->db->prepare ("
+		SELECT max(latitude) north, min(latitude) south, max(longitude) east, min(longitude) west
+		FROM find
+		WHERE project_id=$projectId
+		");
+		$stmt->execute();
+		$row=$stmt->fetch(PDO::FETCH_ASSOC);
+		extract($row);
+		return array('north' => $north,'south' => $south,'east' => $east, 'west'=>$west);
+	}
+	
+	function getDualExtremes($exp_extremes,$find_extremes) {
+		extract($exp_extremes);
+		extract($find_extremes);
+		$north = max(array($exp_extremes['north'],$find_extremes['north']));
+		$south = min(array($exp_extremes['south'],$find_extremes['south']));
+		$east = max(array($exp_extremes['east'],$find_extremes['east']));
+		$west = min(array($exp_extremes['west'],$find_extremes['west']));
+		return array('north' => $north,'south' => $south,'east' => $east, 'west'=>$west);
+	}
+	
+
+	/*
+	 * finds center of gps_samples from an array of extremes labeled north, south, east, and west as in the above two functions
+	 * those functions are getExpExtremes (for expeditions) and getFindExtremes (for finds)
+	 * @param $extremes an array of extremes
+	 * @return $result an array of doubles the geographic center
+	 */
+	function getGeocenter($extremes) {
+		extract($extremes);
+		$lat = ($north+$south)/2.0;
+		$long = ($east+$west)/2.0;
+		$result = array('lat'=>$lat,'long'=>$long);
+		return $result;
 	}
 	
 	
@@ -509,7 +1114,7 @@ class DAO {
 	 * @param unknown_type $projectId
 	 */
 	function deleteAllFinds($projectId) {
-		Log::getInstance()->log("deleteAllFinds: $projectId");
+		$this->createLog("I","deleteAllFinds"," $projectId");
 
 		$stmt = $this->db->prepare("delete from find where project_id = :projectId");
 		$stmt->bindValue(":projectId", $projectId);
@@ -518,14 +1123,31 @@ class DAO {
 	/**
 	 * delete the given project
 	 * @param unknown_type $id
+	 * NOTE: This delete function does not delete a project per se, but rather flags it
+	 *       as deleted rendering it hidden but keeping it in the databasee.
 	 */
 	function deleteProject($id) {
 		Log::getInstance()->log("deleteProject: $id");
 
-		$stmt = $this->db->prepare("delete from project where id = :id");
+		$stmt = $this->db->prepare("update project set deleted=1 where id= :id");
 		$stmt->bindValue(":id", $id);
 		$stmt->execute();
 	}
+	
+	/**
+	 * delete the given find
+	 * @param unknown_type $guid
+	 * NOTE: This delete function does not delete a project per se, but rather flags it
+	 *       as deleted rendering it hidden but keeping it in the databasee.
+	 */
+	 function deleteFind($guid) {
+	 	Log::getInstance()->log("deleteFind: $guid");
+	 		 	
+	 	$stmt = $this->db->prepare("update find set deleted=1 where guid = :guid");
+	 	$stmt->bindValue(":guid", $guid);
+	 	$stmt->execute();
+	 }
+	 
 	/**
 	 * delete the image associated with the id
 	 * @param unknown_type $findId
@@ -556,6 +1178,7 @@ class DAO {
 		$stmt->execute();
 		echo "Deletion of audio clip with find_id = ".$findId." successful.";
 	}
+	
 	/**
 	 * Create  a new find
 	 * @param unknown_type $guId
@@ -566,43 +1189,58 @@ class DAO {
 	 * @param unknown_type $longitude
 	 * @param unknown_type $revision
 	 */
-	function createFind($imei, $guId, $projectId, $name, $description, $latitude, $longitude, $revision) {
-		Log::getInstance()->log("createFind: $guId, $projectId, $name, $description, $latitude, $longitude, $revision");
-		$stmt = $this->db->prepare(
-			"insert into find (imei, barcode_id, project_id, name, description, 
-			latitude, longitude, add_time, modify_time, revision) VALUES
-			(:imei, :barcode_id, :projectId, :name, :description, :latitude, :longitude ,now(), now(), :revision)"
-		);
-		
+	function createFind($auth_key, $imei, $guId, $projectId, $name, $description, $latitude, $longitude, $revision, $data) {
+		Log::getInstance()->log("dao.createFind: $guId, $projectId, $name, $description, $latitude, $longitude, $revision, $data");
+
+                // Note use of 'on duplicate key update'
+                $stmt = $this->db->prepare(
+                        "insert into find (imei, guid, project_id, name, description,
+                        latitude, longitude, add_time, modify_time, revision,auth_key) VALUES
+                        (:imei, :guid, :projectId, :name, :description, :latitude, :longitude ,now(), now(), :revision, :auth_key)
+                        on duplicate key update name = :name, description = :description, modify_time = now(), revision = :revision"
+                );
+
 		$stmt->bindValue(":imei", $imei);
-		$stmt->bindValue(":barcode_id", $guId);
+		$stmt->bindValue(":guid", $guId);
 		$stmt->bindValue(":projectId", $projectId);
 		$stmt->bindValue(":name", $name);
 		$stmt->bindValue(":description", $description);
 		$stmt->bindValue(":latitude", $latitude);
 		$stmt->bindValue(":longitude", $longitude);
 		$stmt->bindValue(":revision", $revision);
+		$stmt->bindValue(":auth_key", $auth_key);
 		$stmt->execute(); 
 		
 		$findid = $this->db->lastInsertId();
-		Log::getInstance()->log("lastInsertId()=$findid");
+		
+		$stmt = $this->db->prepare(
+				"insert into find_extension(find_id, data) VALUES (:find_id, :data)");
+				
+		$stmt->bindValue(":find_id", $findid);
+		$stmt->bindValue(":data", $data);
+		$stmt->execute();
+		
+		Log::getInstance()->log("createFind"." lastInsertId()=$findid"." extended data=$data");
 		
 		// Make an entry in find_history
 		$stmt = $this->db->prepare(
-			"insert into find_history (find_guid, action, imei) VALUES
-			(:find_guid, :action, :imei)"
+			"insert into find_history (find_guid, action, imei, auth_key) VALUES
+			(:find_guid, :action, :imei, :auth_key)"
 		);
 		$stmt->bindValue(":find_guid", $guId);
 		$stmt->bindValue(":action", "create");	
-		$stmt->bindValue(":imei", $imei);	
+		$stmt->bindValue(":imei", $imei);
+		$stmt->bindValue(":auth_key", $auth_key);
 		$stmt->execute();
 		
 		$lastid = $this->db->lastInsertId();
-		Log::getInstance()->log("Updated find_history, created lastInsertId()=$lastid");
+		$this->createLog("I","createFind","Updated find_history, created lastInsertId()=$lastid");
 
 //		return $findid; //get the rowid where it's inserted so that the client can sync.. @todo update in API
 		return "True Created $guId in row=$findid";  
 	}
+	
+	
 	/**
 	 * Update information about a find
 	 * @param unknown_type $guId -- globally unique ID
@@ -610,26 +1248,47 @@ class DAO {
 	 * @param unknown_type $description
 	 * @param unknown_type $revision
 	 */
-	function updateFind($imei, $guId, $projectId, $name, $description, $revision) {
-		Log::getInstance()->log("updateFind: $imei, $guId, $projectId, $name, $description, $revision");
+	function updateFind($auth_key,$imei, $guId, $projectId, $name, $description, $revision, $data, $latitude, $longitude) {
+		Log::getInstance()->log("updateFind: $auth_key, $imei, $guId, $projectId, $name, $description, $revision, $data, $latitude, $longitude");
 		$stmt = $this->db->prepare("update find set name = :name, description = :description, 
-			revision = :revision, modify_time = NOW() where barcode_id = :guid AND project_id = :projectId");
+			revision = :revision, modify_time = NOW(), latitude = :latitude, longitude = :longitude where guid = :guid AND project_id = :projectId");
 		
 		$stmt->bindValue(":name", $name);
 		$stmt->bindValue(":description", $description);
 		$stmt->bindValue(":revision", $revision);
 		$stmt->bindValue(":guid", $guId);
 		$stmt->bindValue(":projectId", $projectId);
+		$stmt->bindValue(":latitude", $latitude);
+		$stmt->bindValue(":longitude", $longitude);
 		$stmt->execute();
-		Log::getInstance()->log("Updated Find= $guId");
+		$this->createLog("I","updateFind","Updated Find= $guId");
+		Log::getInstance()->log("getFind: id = $id");
+		
+		// Get this Find's id for query to extended data
+		$stmt = $this->db->prepare("select id from find where guid = :guid");
+		$stmt->bindValue(":guid", $guId);
+		$stmt->execute();
+		$idResult = $stmt->fetchAll(PDO::FETCH_ASSOC);
+		$id = $idResult[0]["id"];
+		Log::getInstance()->log("updateFind: id = $id");
+
+		// Update the extended data
+		$stmt = $this->db->prepare(
+				"update find_extension set data = :data where find_id = :find_id");
+				
+		$stmt->bindValue(":find_id", $id);
+		$stmt->bindValue(":data", $data);
+		$stmt->execute();
+		Log::getInstance()->log("updateFind: updated extended data for find_id = $id");
 
 		// Make an entry in find_history
 		$stmt = $this->db->prepare(
-			"insert into find_history (find_guid, action, imei) VALUES (:find_guid, :action, :imei)"
+			"insert into find_history (find_guid, action, imei, auth_key) VALUES (:find_guid, :action, :imei, :auth_key)"
 		);
 		$stmt->bindValue(":find_guid", $guId);
 		$stmt->bindValue(":action", "update");	
 		$stmt->bindValue(":imei", $imei);	
+		$stmt->bindValue(":auth_key", $auth_key);
 		$stmt->execute();
 		Log::getInstance()->log("Updated find_history, updated Find $guId $imei");
 		return "True Updated $guId on server";
@@ -643,15 +1302,12 @@ class DAO {
 	 * @param unknown_type $dataFull
 	 * @param unknown_type $dataThumb
 	 */
-	 // $request["imei"], $request["guid"], $request["identifier"], $request["project_id"], 
-	//		    $request["mime_type"], $request["timestamp"], $imagedata, $imagethumbdata);
-
-	function addPictureToFind($imei, $guid, $identifier, $project_id,  $mime_type, $timestamp, $dataFull, $dataThumb) {
-		Log::getInstance()->log("addPictureToFind: $imei, $guid, $identifier, $mimeType");
+	function addPictureToFind($imei, $guid, $identifier, $project_id,  $mime_type, $timestamp, $dataFull, $dataThumb, $authKey) {
+		$this->createLog("I","addPictureToFind"," $imei, $guid, $identifier, $mimeType");
 
 		$stmt = $this->db->prepare(
-			"insert into photo (imei, guid, identifier, project_id,  mime_type, timestamp, data_full, data_thumb)
-			           VALUES (:imei, :guid, :identifier, :project_id, :mime_type, :timestamp, :dataFull, :dataThumb)"
+			"insert into photo (imei, guid, identifier, project_id,  mime_type, timestamp, data_full, data_thumb, auth_key)
+			           VALUES (:imei, :guid, :identifier, :project_id, :mime_type, :timestamp, :dataFull, :dataThumb, :authKey)"
 		);
 		$stmt->bindValue(":imei",$imei);
 		$stmt->bindValue(":guid",$guid);
@@ -661,11 +1317,12 @@ class DAO {
 		$stmt->bindValue(":timestamp",$timestamp);
 		$stmt->bindValue(":dataFull",$dataFull);
 		$stmt->bindValue(":dataThumb",$dataThumb);
+		$stmt->bindValue(":authKey",$authKey);
 		$stmt->execute();
-		Log::getInstance()->log("addPictureToFind: $imei, $guid, $identifier, $mimeType");
+		$this->createLog("I","addPictureToFind"," $imei, $guid, $identifier, $mimeType");
 		
 		$lastid = $this->db->lastInsertId();
-		Log::getInstance()->log("Updated photos for Find $guid, created record lastInsertId()=$lastid");
+		$this->createLog("I","addPictureToFind","Updated photos for Find $guid, created record lastInsertId()=$lastid");
 		return "True Created photo record $guId in row=$lastid";  
 		//return $stmt->fetch(PDO::FETCH_ASSOC);
 	}
@@ -766,7 +1423,7 @@ class DAO {
 	 * @param $newUser
 	 */
 	function registerUser($newUser) {
-		Log::getInstance()->log("registerUser: $newUser");
+		$this->createLog("I","registerUser"," $newUser");
 		list($email, $firstName, $lastName, $password) = $newUser;
 		
 		$stmt = $this->db->prepare(
@@ -796,7 +1453,7 @@ class DAO {
 	 * @param unknown_type $userId
 	 */
 	function getDevicesByUser($userId) {
-		Log::getInstance()->log("getDevicesByUser: $userId");
+		$this->createLog("I","getDevicesByUser","$userId");
 		$stmt = $this->db->prepare(
 			"SELECT imei, name, auth_key, add_time
 			 FROM device
@@ -812,7 +1469,7 @@ class DAO {
 	 * @param unknown_type $authKey
 	 */
 	function getDeviceByAuthKey($authKey) {
-//		Log::getInstance()->log("getDeviceByAuthKey: $authKey");
+//		$this->createLog("I","getDeviceByAuthKey: $authKey");
 		$stmt = $this->db->prepare(
 			"SELECT imei, name, user_id, add_time, status
 			 FROM device
@@ -829,7 +1486,7 @@ class DAO {
 	 */
 	function registerDevicePending($userId, $authKey) {
 //		print_r(array($userId, $authKey));
-		Log::getInstance()->log("registerDevicePending: $userId, $authKey");
+		$this->createLog("I","registerDevicePending","$userId, $authKey");
 		if(!$userId || !$authKey) return false;
 		$stmt = $this->db->prepare(
 			"INSERT INTO device (user_id, auth_key, add_time)
@@ -850,7 +1507,7 @@ class DAO {
 	 * @param unknown_type $name
 	 */
 	function confirmDevice($authKey, $imei, $name) {
-		Log::getInstance()->log("confirmDevice: $authKey, $imei, $name");
+		$this->createLog("I","confirmDevice", $authKey." ".$imei." ".$name);
 
 		$stmt = $this->db->prepare(
 			"SELECT auth_key FROM device WHERE imei = :imei"
@@ -903,7 +1560,7 @@ class DAO {
 	 * @param unknown_type $imei
 	 */
 	function addSandboxDevice($authKey, $imei) {
-		log("addSandboxDevice " .$authKey . " " . $imei);
+		$this->createLog("I","addSandboxDevice ",$authKey . " " . $imei);
 		$stmt = $this->db->prepare("delete from device where imei = :imei");
 		$stmt->bindValue(":imei", $imei);
 		$stmt->execute();
@@ -1015,6 +1672,96 @@ class DAO {
 		return $available_values;
 
 	}
+	function projectExists ($project_id){
+		$project= $this->getProject($project_id);
+//		var_dump($project);
+		if ($project["deleted"]==0){
+			return "true";
+		}else {
+			return "false";
+		}
+	}
+	
+	/* Gets project name associated with project id
+	 * @param the project id
+	 * @return the project name
+	 */
+	function getProjectName ($project_id) {
+		$stmt = $this->db->prepare(
+			"SELECT name
+			FROM project
+			WHERE id = :project_id
+			");
+		$stmt->bindValue(":project_id", $project_id);
+		$stmt->execute();
+		$row=$stmt->fetch(PDO::FETCH_ASSOC);
+		return "".$row['name'];
+	}
+	
+	/* Gets the project description associated with project id
+	 * @param the project id
+	 * @return the project description
+	 */
+	function getProjectDescription ($project_id) {
+		$stmt = $this->db->prepare(
+			"SELECT description
+			FROM project
+			WHERE id = :project_id
+			");
+		$stmt->bindValue(":project_id", $project_id);
+		$stmt->execute();
+		$row=$stmt->fetch(PDO::FETCH_ASSOC);
+		return "".$row['description'];
+	}
+	
+	/* Exports project with given project id to .csv file
+	 * NOTE: date is modified to be easily parsed by Microsoft Excel
+	 * @param the project id
+	 * @return the string to be parsed as a .csv
+	 */
+	function exportProject ($project_id){
+		$project_name = $this->getProjectName($project_id);
+		$project_description = $this->getProjectDescription($project_id);
+		$stmt = $this->db->prepare(
+			"SELECT description, name, add_time, latitude, longitude
+			FROM find
+			WHERE project_id=:project_id			
+			AND deleted=0
+			");
+		$stmt->bindValue(":project_id", $project_id);
+		$stmt->execute();
+		$csvwriter = "";
+		$csvwriter = "Project Name: {$project_name},,,,\n";
+		$csvwriter .= "Project Description: {$project_description},,,,\n\n";
+		$csvwriter .= "NAME,DESCRIPTION,DATE ADDED,LATITUDE,LONGITUDE\n";
+		while ($row=$stmt->fetch(PDO::FETCH_ASSOC))
+			{
+			extract($row);
+			$new_time = convertDate(strtotime($add_time), "excel");
+			// removes commas to allow for correct delimiting
+			$new_description = str_replace(",","",$description);
+			$csvwriter .= "$name,$new_description,$new_time,$latitude,$longitude";
+			$csvwriter .= "\n";
+			}
+		return $csvwriter;
+	}
+	
+	/*
+	 * replaces spaces in a string with underscores
+	 * @param the id of the project whose name should be fixed
+	 * @param the new string without spaces
+	 */
+	function formatProjectName($project_id) {
+		$project_name = $this->getProjectName($project_id);
+		$arr_name = explode(" ",$project_name);
+		$new_name = "";
+		foreach ($arr_name as $word) {
+			$new_name .= $word . "_";
+		}
+		$new_name = rtrim($new_name, "_");
+		return $new_name;
+	}
+		
 }
 
 ?>

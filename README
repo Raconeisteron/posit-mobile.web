@@ -1,5 +1,17 @@
 Positweb for the web service for POSIT application.
 
+============== Source Code ====================
+
+Source repository:  http://code.google.com/p/posit-mobile/wiki/SourceTab?tm=4
+
+================ Docmentation =================
+
+Docs: http://code.google.com/p/posit-mobile/wiki/PositWebDocs
+
+================  Installation Guid ===========
+
+See ./INSTALL for starters.
+
 ============== About the Project ===============
 
 Positweb is a php5 application based on a Model-View-Controller architecture. 

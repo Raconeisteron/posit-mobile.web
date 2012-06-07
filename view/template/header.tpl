@@ -4,8 +4,9 @@
 		<!--link rel="stylesheet" href="../res/style/basic.css"/-->
 		<script src="../res/js/util.js"></script>
 		<script src="../res/js/jquery-1.3.2.min.js"></script>
-		<script type="text/javascript" src="http://www.google.com/jsapi?key={$smarty.const.GOOGLE_MAPS_KEY}"></script>
-		<link rel="shortcut icon" href="/../../../../~cfei/icon.png" type="image/x-icon" /> 
+ 		<script type="text/javascript" src="http://www.google.com/jsapi?key={$smarty.const.GOOGLE_MAPS_KEY}"></script>
+<!-- 		<script type="text/javascript" src="http://www.google.com/jsapi?key=AIzaSyDATu7pDUbzm9fxXpCK6ywrm3SDXQtzUkE"></script> -->
+		<link rel="shortcut icon" href="../res/image/icon.png" type="image/x-icon" /> 
 		<link type="text/css" rel="stylesheet" media="all" href="../res/style/css/node.css" /> 
 		<link type="text/css" rel="stylesheet" media="all" href="../res/style/css/defaults.css" /> 
 		<link type="text/css" rel="stylesheet" media="all" href="../res/style/css/system.css" /> 
@@ -26,16 +27,16 @@
 
 						 
       <div id="logo-title"> 
-	  <a href="http://www.hfoss.org"><img id="face" width="48" height="100" src="http://home.cs.trincoll.edu/~aalcorn/posit/hfoss-small.png"/></a> 
+	  <a href="http://www.hfoss.org"><img id="face" width="48" height="100" src="../res/style/images/hfoss-small.png"/></a> 
                           <a href="main" title="Home" rel="home"> 
-            <img src="http://home.cs.trincoll.edu/~aalcorn/posit/posit.png" alt="Home" id="logo" /> 
+            <img src="../res/style/images/posit.png" alt="Home" id="logo" /> 
           </a> 
         
         <div id="name-and-slogan"> 
  
         
                   <div id="site-slogan"> 
-            Portable Open Search and Identification Tool          </div> 
+            Portable Open Source Information Tool          </div> 
         
         </div> <!-- /name-and-slogan --> 
  
@@ -47,21 +48,25 @@
 			
 			      <div id="navigation" class="menu withprimary "> 
                   <div id="primary" class="clear-block"> 
-                  <ul class="links"><li class="menu-120 active-trail first active"><a href="main" title="Home" class="active">Home</a></li> 
-            <li class="menu-114">			<div id="loginStatus">
+                  <ul class="links"><li><a href="main" title="Home" {if $tab=="home" || $tab==""} class="active"{/if}>Home</a></li> 
+				<li class="menu-114">			
+				<div id="loginStatus">
 				{if $loggedIn}
-					Logged in as <strong>{$loginEmail}</strong> [<a href="logout" id="logout-link">log out</a>]
+
+				<a href="logout" id="logout-link">log out</a>
+				<div id="login-user">Logged in as <strong>{$loginEmail}</strong> </div>
 				{else}
 					<a href="login">Log in/register</a>
 				{/if}
 			</div> <!-- /loginStatus --></li>
-<li class="menu-114"><a href="projects" title="Projects">Projects</a></li> 
-<li class="menu-144"><a href="settings" title="Settings">Settings</a></li> 
-<li class="menu-135"><a href="maps" title="Maps">Maps</a></li> 
+<li><a href="projects" title="Projects" {if $tab== "projects"}class="active"{/if} >Projects</a></li> 
+<li><a href="settings" title="Settings" {if $tab== "settings"}class="active"{/if}  >Settings</a></li> 
+<li><a href="formbuilder" title="Form Builder" {if $tab== "formbuilder"}class="active"{/if}  >Form Builder</a></li> 
+<!--<li><a href="maps" title="Maps" {if $tab== "maps"}class="active"{/if}>Maps</a></li>--> 
 {if $loginHasAdmin}
-<li class="menu-134"><a href="admin" title="Administration">Administration</a></li> 
+<li><a href="admin" title="Administration"{if $tab== "admin"}class="active"{/if}>Administration</a></li> 
 {/if}
-<li class="menu-129"><a href="expeditions" title="Expeditions">Expeditions</a></li> 
+<!--<li><a href="expeditions" title="Expeditions">Expeditions</a></li> -->
 </ul>          
 </div>
 
@@ -69,3 +74,7 @@
               </div> <!-- /navigation --> 
 		</div> <!-- /header -->
 		<div id="content">
+		{if $error}
+		<div class="error">{$error}</div>
+		{/if}
+			

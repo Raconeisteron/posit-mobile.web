@@ -19,5 +19,13 @@ function genAuthKey($length = 16) {
 function sendEmail($to, $subject, $message){
 	mail($to, $subject, $message, "Content-Type: text/html; charset=iso-8859-1");
 }
-
+// converts timestamp to specific formats
+function convertDate ($timestamp, $format) {
+	$date = "";
+	switch ($format){
+		case "excel":
+			$date = date("m/d/y g:i", $timestamp);
+	}
+	return $date;
+}
 ?>
