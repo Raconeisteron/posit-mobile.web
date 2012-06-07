@@ -63,6 +63,8 @@ function apiController($path, $request, $files = null) {
 			if (!$password){
 				jsonError(ERR_PASSWORD_MISSING, "Password is required");
 			}
+
+// NOTE: Tablets don't have imei.  So this will only work for phones.
 //			if (!$imei){
 //				jsonError(ERR_IMEI_MISSING, "IMEI Code is required");
 //			}

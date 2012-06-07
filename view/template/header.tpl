@@ -4,7 +4,8 @@
 		<!--link rel="stylesheet" href="../res/style/basic.css"/-->
 		<script src="../res/js/util.js"></script>
 		<script src="../res/js/jquery-1.3.2.min.js"></script>
-		<script type="text/javascript" src="http://www.google.com/jsapi?key={$smarty.const.GOOGLE_MAPS_KEY}"></script>
+ 		<script type="text/javascript" src="http://www.google.com/jsapi?key={$smarty.const.GOOGLE_MAPS_KEY}"></script>
+<!-- 		<script type="text/javascript" src="http://www.google.com/jsapi?key=AIzaSyDATu7pDUbzm9fxXpCK6ywrm3SDXQtzUkE"></script> -->
 		<link rel="shortcut icon" href="../res/image/icon.png" type="image/x-icon" /> 
 		<link type="text/css" rel="stylesheet" media="all" href="../res/style/css/node.css" /> 
 		<link type="text/css" rel="stylesheet" media="all" href="../res/style/css/defaults.css" /> 
